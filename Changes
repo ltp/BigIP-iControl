@@ -1,0 +1,7 @@
+Revision history for BigIP-iControl
+
+0.095   Thu Jun 21 2012 ltp@cpan.org
+	- Added two new methods; get_self_ip_list and get_self_ip_vlan.
+
+0.094	Wed Jun 20 2012 ltp@cpan.org
+	- Added download_file method.
