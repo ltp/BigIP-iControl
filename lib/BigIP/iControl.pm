@@ -7,8 +7,9 @@ use Carp qw(confess croak);
 use Exporter;
 use SOAP::Lite;
 use MIME::Base64;
+use Math::BigInt;
 
-our $VERSION    = '0.095';
+our $VERSION    = '0.096';
 
 =head1 NAME
 
@@ -113,6 +114,14 @@ our $modules    = {
 							get_object_status	=> 'node_addresses',
 							get_monitor_status	=> 'node_addresses',
 							get_statistics		=> 'node_addresses'
+							},
+				Class		=>	{
+							get_address_class_list	=> 0,
+							get_string_class	=> 'class_names',
+							get_string_class_member_data_value	=> 'class_members',
+							set_string_class_member_data_value	=> {class_members => 1, values => 1},
+							add_string_class_member	=> 'class_members',
+							delete_string_class_member=> 'class_members',
 							}
 				},
 	Management	=>	{
@@ -623,7 +632,7 @@ sub __process_statistics {
 
 	foreach (@{@{$statistics->{statistics}}[0]->{statistics}}) {
 		my $type		= $_->{type};
-		$stat_obj{stats}{$type}	= (($_->{value}{high})<<32)|(abs $_->{value}{low});
+		$stat_obj{stats}{$type}	= Math::BigInt->new("0x" . unpack("H*", pack("N2",$_->{value}{high}, $_->{value}{low})))->bstr;
 	}
 	
 	return %stat_obj
@@ -1500,7 +1509,7 @@ sub get_ltm_vs_rules {
 		@{@{$self->_request(module => 'LocalLB', interface => 'VirtualServer', method => 'get_rule', data => {virtual_servers => [$vs]})}[0]}
 }
 
-=head get_ltm_snat_pool ($virtual_server)
+=head3 get_ltm_snat_pool ($virtual_server)
 
 =cut
 
@@ -1509,7 +1518,7 @@ sub get_ltm_snat_pool {
 	return @{$self->_request(module => 'LocalLB', interface => 'VirtualServer', method => 'get_snat_pool', data => {virtual_servers => [$vs]})}[0]
 }
 
-=head get_ltm_snat_type ($virtual_server)
+=head3 get_ltm_snat_type ($virtual_server)
 
 =cut
 
@@ -2005,6 +2014,108 @@ sub __get_gtm_vs_definition {
 	}
 }
 
+=head3 get_ltm_address_class_list ()
+
+Returns a list of all existing address classes.
+
+=cut
+
+sub get_ltm_address_class_list {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'Class', method => 'get_address_class_list') }
+}
+
+=head3 get_ltm_string_class ( $class_name )
+
+Return the specified LTM string class.
+
+=cut
+
+sub get_ltm_string_class {
+	my ( $self, $class ) = @_;
+        return @{ $self->_request(module => 'LocalLB', interface => 'Class', method => 'get_string_class', data => { class_names => [ $class ] } ) }[0]
+}
+
+=head3 get_ltm_string_class_members ( $class )
+
+Returns the specified LTM string class members.
+
+=cut
+
+sub get_ltm_string_class_members {
+	my ( $self, $class ) = @_;
+	return $self->_request( module => 'LocalLB', interface => 'Class', method => 'get_string_class_member_data_value', data => { class_members => 
+        			[ @{ $self->_request(module => 'LocalLB', interface => 'Class', method => 'get_string_class', data => { class_names => [ $class ] } ) }[0] ] } )
+}
+
+=head3 add_ltm_string_class_member ( $class, $member )
+
+Add the provided member to the specified class.
+
+=cut
+
+sub add_ltm_string_class_member {
+	my ( $self, $class, $member ) = @_;
+	$self->_request(	module		=> 'LocalLB',
+				interface	=> 'Class',
+				method		=> 'add_string_class_member',
+				data		=> {
+						class_members	=> [
+								     {
+								   	name	=> $class,
+									members => [ $member ]
+								     }
+								]
+						}
+			)
+}
+
+=head3 delete_ltm_string_class_member ( $class, $member )
+
+Deletes the provided member from the specified class.
+
+=cut
+
+sub delete_ltm_string_class_member {
+	my ( $self, $class, $member ) = @_;
+	$self->_request(	module		=> 'LocalLB',
+				interface	=> 'Class',
+				method		=> 'delete_string_class_member',
+				data		=> {
+						class_members	=> [
+								     {
+								   	name	=> $class,
+									members => [ $member ]
+								     }
+								]
+						}
+			)
+}
+
+=head3 set_ltm_string_class_member ( $class, $member, value )
+
+Sets the value of the member to the provided value in the specified class.
+
+=cut
+
+sub set_ltm_string_class_member {
+	my ( $self, $class, $member, $value ) =	@_;
+	$self->_request(	module 		=> 'LocalLB', 
+				interface	=> 'Class', 
+				method		=> 'set_string_class_member_data_value', 
+				data 		=> {
+						class_members	=> [ 
+								     { 
+									name	=> $class, 
+									members => [ $member ] 
+								     } 
+								   ], 
+						values		=> [ 
+									[ $value ] 
+								   ] 
+						} 
+			)
+}
+
 =head3 get_db_variable ( $VARIABLE )
 
 	# Prints the value of the configsync.state database variable.
@@ -2030,20 +2141,36 @@ sub get_event_subscription_list {
 	return $self->_request(module => 'Management', interface => 'EventSubscription', method => 'get_list');
 }
 
+=head3 get_event_subscription
+
+=cut
+
 sub get_event_subscription {
 	my ($self, $id)=@_;
 	return $self->_request(module => 'Management', interface => 'EventSubscription', method => 'query', data => { id_list => [$id] })
 }
+
+=head3 remove_event_subscription
+
+=cut
 
 sub remove_event_subscription {
 	my ($self, $id)=@_;
 	return $self->_request(module => 'Management', interface => 'EventSubscription', method => 'remove', data => { id_list => [$id] })
 }
 
+=head3 get_event_subscription_state
+
+=cut
+
 sub _get_event_subscription_state {
 	my ($self,$id)	= @_;
 	return @{$self->_request(module => 'Management', interface => 'EventSubscription', method => 'get_state', data => { id_list => [$id] })}[0]
 }
+
+=head3 get_event_subscription_url
+
+=cut
 
 sub get_event_subscription_url {
 	my ($self,$id)	= @_;
