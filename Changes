@@ -1,5 +1,17 @@
 Revision history for BigIP-iControl
 
+0.096   Wed Jun 24 2013 ltp@cpan.org
+	- Fixed long64 conversion in statistical routines.
+	- Added methods: 
+		- set_ltm_string_class_member
+		- get_ltm_vs_rules
+		- get_ltm_string_class_members
+	  	- get_ltm_string_class
+		- get_ltm_snat_type
+		- get_ltm_address_class_list
+		- delete_ltm_string_class_member
+		- add_ltm_string_class_member
+
 0.095   Thu Jun 21 2012 ltp@cpan.org
 	- Added two new methods; get_self_ip_list and get_self_ip_vlan.
 
