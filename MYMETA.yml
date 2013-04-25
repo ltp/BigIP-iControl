@@ -21,4 +21,4 @@ requires:
   MIME::Base64: 0
   SOAP::Lite: 0
   Test::More: 0
-version: 0.096
+version: 0.097
