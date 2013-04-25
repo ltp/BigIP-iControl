@@ -9,7 +9,7 @@ use SOAP::Lite;
 use MIME::Base64;
 use Math::BigInt;
 
-our $VERSION    = '0.096';
+our $VERSION    = '0.097';
 
 =head1 NAME
 
@@ -117,6 +117,7 @@ our $modules    = {
 							},
 				Class		=>	{
 							get_address_class_list	=> 0,
+							get_string_class_list	=> 0,
 							get_string_class	=> 'class_names',
 							get_string_class_member_data_value	=> 'class_members',
 							set_string_class_member_data_value	=> {class_members => 1, values => 1},
@@ -2024,6 +2025,16 @@ sub get_ltm_address_class_list {
         return @{ $_[0]->_request(module => 'LocalLB', interface => 'Class', method => 'get_address_class_list') }
 }
 
+=head3 get_ltm_string_class_list ()
+
+Returns a list of all existing string classes.
+
+=cut
+
+sub get_ltm_string_class_list {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'Class', method => 'get_string_class_list') }
+}
+
 =head3 get_ltm_string_class ( $class_name )
 
 Return the specified LTM string class.
@@ -2032,7 +2043,7 @@ Return the specified LTM string class.
 
 sub get_ltm_string_class {
 	my ( $self, $class ) = @_;
-        return @{ $self->_request(module => 'LocalLB', interface => 'Class', method => 'get_string_class', data => { class_names => [ $class ] } ) }[0]
+        return @{ $self->_request(module => 'LocalLB', interface => 'Class', method => 'get_string_class', data => { class_names => [ $class ] } ) }[0]->{members}
 }
 
 =head3 get_ltm_string_class_members ( $class )
