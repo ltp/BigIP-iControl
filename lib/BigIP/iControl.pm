@@ -152,6 +152,16 @@ our $modules    = {
 							get_key_list		=> 'mode',
 							get_certificate_bundle	=> {mode => 1, file_names => 1},
 							get_certificate_list	=> 'mode'
+							},
+				UserManagement	=>	{
+							create_user_3		=> 'users',
+							change_password_2	=> {user_names => 1, passwords => 1},
+							delete_user		=> 'user_names',
+							get_list		=> 0,
+							get_encrypted_password	=> 'user_names',
+							get_user_id		=> 'user_names',
+							get_user_permission	=> 'user_names',
+							set_user_permission	=> {user_names => 1, permissions => 1}
 							}
 				},
 	Networking	=>	{
@@ -2428,6 +2438,86 @@ Imports/installs the specified keys from the given PEM-formatted data.
 
 sub key_import_from_pem {
 	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'key_import_from_pem', data => {mode => $_[1], key_ids => $_[2], pem_data => $_[3], overwrite => $_[4]});
+}
+
+=head3 create_user_3 ()
+
+Create the specified new users.
+
+=cut
+
+sub create_user_3 {
+	$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'create_user_3', data => {users => $_[1]});
+}
+
+=head3 change_password_2 ()
+
+Change the user's password.
+
+=cut
+
+sub change_password_2 {
+	$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'change_password_2', data => {user_names => $_[1], passwords => $_[2]});
+}
+
+=head3 delete_user ()
+
+Delete the specified users.
+
+=cut
+
+sub delete_user {
+	$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'delete_user', data => {user_names => $_[1]});
+}
+
+=head3 get_user_list ()
+
+List all users.
+
+=cut
+
+sub get_user_list {
+	return @{$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'get_list')};
+}
+
+=head3 get_encrypted_password (user_names)
+
+Gets the encrypted passwords of the specified users.
+
+=cut
+
+sub get_encrypted_password {
+	return @{$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'get_encrypted_password', data => {user_names => $_[1]})};
+}
+
+=head3 get_user_id (user_names)
+
+Get the User IDs for the given usernames.
+
+=cut
+
+sub get_user_id {
+	return @{$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'get_user_id', data => {user_names => $_[1]})};
+}
+
+=head3 get_user_permission (user_names)
+
+Gets the permissions of the specified users.
+
+=cut
+
+sub get_user_permission {
+	return @{$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'get_user_permission', data => {user_names => $_[1]})};
+}
+
+=head3 set_user_permission (user_names, permissions)
+
+Sets the permissions of the specified users.
+
+=cut
+
+sub set_user_permission {
+	$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'set_user_permission', data => {user_names => $_[1], permissions => $_[2]});
 }
 
 =head1 NOTES
