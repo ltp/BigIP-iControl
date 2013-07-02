@@ -138,6 +138,20 @@ our $modules    = {
 							get_proxy_url		=> 'id_list',
 							remove			=> 'id_list',
 							query			=> 'id_list'
+							},
+				KeyCertificate	=>	{
+							certificate_add_pem_to_bundle	=> {mode => 1, cert_ids => 1, pem_data => 1},
+							certificate_bind	=> {mode => 1, cert_ids => 1, key_ids => 1},
+							certificate_delete	=> {mode => 1, cert_ids => 1},
+							certificate_delete_from_bundle	=> {mode => 1, cert_ids => 1, x509_data => 1},
+							certificate_export_to_pem	=> {mode => 1, cert_ids => 1},
+							certificate_import_from_pem	=> {mode => 1, cert_ids => 1, pem_data => 1, overwrite => 1},
+							key_delete		=> {mode => 1, key_ids => 1},
+							key_export_to_pem	=> {mode => 1, key_ids => 1},
+							key_import_from_pem	=> {mode => 1, key_ids => 1, pem_data => 1, overwrite => 1},
+							get_key_list		=> 'mode',
+							get_certificate_bundle	=> {mode => 1, file_names => 1},
+							get_certificate_list	=> 'mode'
 							}
 				},
 	Networking	=>	{
@@ -2294,6 +2308,126 @@ sub create_subscription_list {
 				enabled_state			=> 'STATE_ENABLED'
 			};
 	return $self->_request(module => 'Management', interface => 'EventSubscription', method => 'create', data => {sub_detail_list => [$sub_detail_list]});
+}
+
+=head3 certificate_add_pem_to_bundle (mode, cert_ids, pem_data)
+
+Adds certificates identified by "pem_data" to the certificate bundles, which are presumed to exist already.
+
+=cut
+
+sub certificate_add_pem_to_bundle {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'certificate_add_pem_to_bundle', data => {mode => $_[1], cert_ids => $_[2], pem_data => $_[3]});
+}
+
+=head3 certificate_bind (mode, cert_ids, key_ids)
+
+Binds/associates the specified keys and certificates.
+
+=cut
+
+sub certificate_bind {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'certificate_bind', data => {mode => $_[1], cert_ids => $_[2], key_ids => $_[3]});
+}
+
+=head3 certificate_delete (mode, cert_ids)
+
+Deletes/uninstalls the specified certificates.
+
+=cut
+
+sub certificate_delete {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'certificate_delete', data => {mode => $_[1], cert_ids => $_[2]});
+}
+
+=head3 certificate_delete_from_bundle (mode, cert_ids, x509_data)
+
+Deletes certificates, identified by their subject's X509 data, from the certificate bundles.
+
+=cut
+
+sub certificate_delete_from_bundle {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'certificate_delete_from_bundle', data => {mode => $_[1], cert_ids => $_[2], x509_data => $_[3]});
+}
+
+=head3 certificate_export_to_pem (mode, cert_ids)
+
+Get the specified certificates as PEM strings.
+
+=cut
+
+sub certificate_export_to_pem {
+	return @{$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'certificate_export_to_pem', data => {mode => $_[1], cert_ids => $_[2]})};
+}
+
+=head3 certificate_import_from_pem (mode, cert_ids, pem_data, overwrite)
+
+Imports/installs the specified certificates from the given PEM-formatted data.
+
+=cut
+
+sub certificate_import_from_pem {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'certificate_import_from_pem', data => {mode => $_[1], cert_ids => $_[2], pem_data => $_[3], overwrite => $_[4]});
+}
+
+=head3 get_key_list (mode)
+
+Get the list of keys in the system.
+
+=cut
+
+sub get_key_list {
+	return @{$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'get_key_list', data => {mode => $_[1]})};
+}
+
+=head3 get_certificate_bundle (mode, file_names)
+
+Gets the list of all certificates bundled in the certificate files as specified by the file_names.
+
+=cut
+
+sub get_certificate_bundle {
+	return @{$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'get_certificate_bundle', data => {mode => $_[1], file_names => $_[2]})};
+}
+
+=head3 get_certificate_list (mode)
+
+Get the list of certificates in the system.
+
+=cut
+
+sub get_certificate_list {
+	return @{$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'get_certificate_list', data => {mode => $_[1]})};
+}
+
+=head3 key_delete (mode, key_ids)
+
+Deletes/uninstalls the specified keys.
+
+=cut
+
+sub key_delete {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'key_delete', data => {mode => $_[1], key_ids => $_[2]});
+}
+
+=head3 key_export_to_pem (mode, key_ids)
+
+Get the specified certificates as PEM strings.
+
+=cut
+
+sub key_export_to_pem {
+	return @{$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'key_export_to_pem', data => {mode => $_[1], key_ids => $_[2]})};
+}
+
+=head3 key_import_from_pem (mode, key_ids, pem_data, overwrite)
+
+Imports/installs the specified keys from the given PEM-formatted data.
+
+=cut
+
+sub key_import_from_pem {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'key_import_from_pem', data => {mode => $_[1], key_ids => $_[2], pem_data => $_[3], overwrite => $_[4]});
 }
 
 =head1 NOTES
