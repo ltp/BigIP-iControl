@@ -138,6 +138,30 @@ our $modules    = {
 							get_proxy_url		=> 'id_list',
 							remove			=> 'id_list',
 							query			=> 'id_list'
+							},
+				KeyCertificate	=>	{
+							certificate_add_pem_to_bundle	=> {mode => 1, cert_ids => 1, pem_data => 1},
+							certificate_bind	=> {mode => 1, cert_ids => 1, key_ids => 1},
+							certificate_delete	=> {mode => 1, cert_ids => 1},
+							certificate_delete_from_bundle	=> {mode => 1, cert_ids => 1, x509_data => 1},
+							certificate_export_to_pem	=> {mode => 1, cert_ids => 1},
+							certificate_import_from_pem	=> {mode => 1, cert_ids => 1, pem_data => 1, overwrite => 1},
+							key_delete		=> {mode => 1, key_ids => 1},
+							key_export_to_pem	=> {mode => 1, key_ids => 1},
+							key_import_from_pem	=> {mode => 1, key_ids => 1, pem_data => 1, overwrite => 1},
+							get_key_list		=> 'mode',
+							get_certificate_bundle	=> {mode => 1, file_names => 1},
+							get_certificate_list	=> 'mode'
+							},
+				UserManagement	=>	{
+							create_user_3		=> 'users',
+							change_password_2	=> {user_names => 1, passwords => 1},
+							delete_user		=> 'user_names',
+							get_list		=> 0,
+							get_encrypted_password	=> 'user_names',
+							get_user_id		=> 'user_names',
+							get_user_permission	=> 'user_names',
+							set_user_permission	=> {user_names => 1, permissions => 1}
 							}
 				},
 	Networking	=>	{
@@ -2294,6 +2318,206 @@ sub create_subscription_list {
 				enabled_state			=> 'STATE_ENABLED'
 			};
 	return $self->_request(module => 'Management', interface => 'EventSubscription', method => 'create', data => {sub_detail_list => [$sub_detail_list]});
+}
+
+=head3 certificate_add_pem_to_bundle (mode, cert_ids, pem_data)
+
+Adds certificates identified by "pem_data" to the certificate bundles, which are presumed to exist already.
+
+=cut
+
+sub certificate_add_pem_to_bundle {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'certificate_add_pem_to_bundle', data => {mode => $_[1], cert_ids => $_[2], pem_data => $_[3]});
+}
+
+=head3 certificate_bind (mode, cert_ids, key_ids)
+
+Binds/associates the specified keys and certificates.
+
+=cut
+
+sub certificate_bind {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'certificate_bind', data => {mode => $_[1], cert_ids => $_[2], key_ids => $_[3]});
+}
+
+=head3 certificate_delete (mode, cert_ids)
+
+Deletes/uninstalls the specified certificates.
+
+=cut
+
+sub certificate_delete {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'certificate_delete', data => {mode => $_[1], cert_ids => $_[2]});
+}
+
+=head3 certificate_delete_from_bundle (mode, cert_ids, x509_data)
+
+Deletes certificates, identified by their subject's X509 data, from the certificate bundles.
+
+=cut
+
+sub certificate_delete_from_bundle {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'certificate_delete_from_bundle', data => {mode => $_[1], cert_ids => $_[2], x509_data => $_[3]});
+}
+
+=head3 certificate_export_to_pem (mode, cert_ids)
+
+Get the specified certificates as PEM strings.
+
+=cut
+
+sub certificate_export_to_pem {
+	return @{$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'certificate_export_to_pem', data => {mode => $_[1], cert_ids => $_[2]})};
+}
+
+=head3 certificate_import_from_pem (mode, cert_ids, pem_data, overwrite)
+
+Imports/installs the specified certificates from the given PEM-formatted data.
+
+=cut
+
+sub certificate_import_from_pem {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'certificate_import_from_pem', data => {mode => $_[1], cert_ids => $_[2], pem_data => $_[3], overwrite => $_[4]});
+}
+
+=head3 get_key_list (mode)
+
+Get the list of keys in the system.
+
+=cut
+
+sub get_key_list {
+	return @{$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'get_key_list', data => {mode => $_[1]})};
+}
+
+=head3 get_certificate_bundle (mode, file_names)
+
+Gets the list of all certificates bundled in the certificate files as specified by the file_names.
+
+=cut
+
+sub get_certificate_bundle {
+	return @{$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'get_certificate_bundle', data => {mode => $_[1], file_names => $_[2]})};
+}
+
+=head3 get_certificate_list (mode)
+
+Get the list of certificates in the system.
+
+=cut
+
+sub get_certificate_list {
+	return @{$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'get_certificate_list', data => {mode => $_[1]})};
+}
+
+=head3 key_delete (mode, key_ids)
+
+Deletes/uninstalls the specified keys.
+
+=cut
+
+sub key_delete {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'key_delete', data => {mode => $_[1], key_ids => $_[2]});
+}
+
+=head3 key_export_to_pem (mode, key_ids)
+
+Get the specified certificates as PEM strings.
+
+=cut
+
+sub key_export_to_pem {
+	return @{$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'key_export_to_pem', data => {mode => $_[1], key_ids => $_[2]})};
+}
+
+=head3 key_import_from_pem (mode, key_ids, pem_data, overwrite)
+
+Imports/installs the specified keys from the given PEM-formatted data.
+
+=cut
+
+sub key_import_from_pem {
+	$_[0]->_request(module => 'Management', interface => 'KeyCertificate', method => 'key_import_from_pem', data => {mode => $_[1], key_ids => $_[2], pem_data => $_[3], overwrite => $_[4]});
+}
+
+=head3 create_user_3 ()
+
+Create the specified new users.
+
+=cut
+
+sub create_user_3 {
+	$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'create_user_3', data => {users => $_[1]});
+}
+
+=head3 change_password_2 ()
+
+Change the user's password.
+
+=cut
+
+sub change_password_2 {
+	$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'change_password_2', data => {user_names => $_[1], passwords => $_[2]});
+}
+
+=head3 delete_user ()
+
+Delete the specified users.
+
+=cut
+
+sub delete_user {
+	$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'delete_user', data => {user_names => $_[1]});
+}
+
+=head3 get_user_list ()
+
+List all users.
+
+=cut
+
+sub get_user_list {
+	return @{$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'get_list')};
+}
+
+=head3 get_encrypted_password (user_names)
+
+Gets the encrypted passwords of the specified users.
+
+=cut
+
+sub get_encrypted_password {
+	return @{$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'get_encrypted_password', data => {user_names => $_[1]})};
+}
+
+=head3 get_user_id (user_names)
+
+Get the User IDs for the given usernames.
+
+=cut
+
+sub get_user_id {
+	return @{$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'get_user_id', data => {user_names => $_[1]})};
+}
+
+=head3 get_user_permission (user_names)
+
+Gets the permissions of the specified users.
+
+=cut
+
+sub get_user_permission {
+	return @{$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'get_user_permission', data => {user_names => $_[1]})};
+}
+
+=head3 set_user_permission (user_names, permissions)
+
+Sets the permissions of the specified users.
+
+=cut
+
+sub set_user_permission {
+	$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'set_user_permission', data => {user_names => $_[1], permissions => $_[2]});
 }
 
 =head1 NOTES
