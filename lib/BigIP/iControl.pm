@@ -159,6 +159,8 @@ our $modules    = {
 							delete_user		=> 'user_names',
 							get_list		=> 0,
 							get_encrypted_password	=> 'user_names',
+							get_login_shell		=> 'user_names',
+							set_login_shell		=> {user_names => 1, shells => 1},
 							get_user_id		=> 'user_names',
 							get_user_permission	=> 'user_names',
 							set_user_permission	=> {user_names => 1, permissions => 1}
@@ -2498,6 +2500,26 @@ Get the User IDs for the given usernames.
 
 sub get_user_id {
 	return @{$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'get_user_id', data => {user_names => $_[1]})};
+}
+
+=head3 get_login_shell (user_names)
+
+Get the login shells for the given usernames.
+
+=cut
+
+sub get_login_shell {
+	return @{$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'get_login_shell', data => {user_names => $_[1]})};
+}
+
+=head3 set_login_shell (user_names, shells)
+
+Sets the login shells for the specified users.
+
+=cut
+
+sub set_login_shell {
+	$_[0]->_request(module => 'Management', interface => 'UserManagement', method => 'set_login_shell', data => {user_names => $_[1], shells => $_[2]});
 }
 
 =head3 get_user_permission (user_names)
