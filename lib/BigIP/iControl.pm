@@ -199,6 +199,7 @@ our $modules    = {
 							download_configuration	=> {config_name => 1, chunk_size => 1, file_offset => 1}
 							},
 				SystemInfo	=>	{
+							get_product_information => 0,
 							get_system_information	=> 0,
 							get_system_id		=> 0,
 							get_cpu_metrics		=> 0,
@@ -697,6 +698,24 @@ sub __process_cpu_statistics {
 
 sub __zero_fill {
 	return ($_[0] < 10 ? '0' . $_[0] : $_[0])
+}
+
+=head3 get_system_information
+
+Gets a ProductInformation struct containing the identifying attributes of installed product.
+The struct information is described below;
+
+	Member			Type		Description
+	----------		----------	----------
+	product_code		String		The identifier describing the installed product.
+	product_version 	String		The version of the installed product.
+	package_version 	String		The package version of the installed product.
+	package_edition 	String		The package edition of the installed product.
+	product_features 	String [] 	A list of feature names available in the installed product. 
+=cut
+
+sub get_product_information  {
+	return $_[0]->_request(module => 'System', interface => 'SystemInfo', method => 'get_product_information')
 }
 
 =head3 get_system_information
