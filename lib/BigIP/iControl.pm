@@ -203,7 +203,6 @@ our $modules    = {
 							get_all_software_status	=> 0,
 							get_boot_location	=> 0,
 							get_hotfix_information	=> 0,
-							get_software_status	=> {installation_ids => 1},
 							install_software_image_v2 => {volume => 1, product => 1, version => 1, build => 1, create_volume => 1, reboot => 1, retry => 1 }
 							},
 				SystemInfo	=>	{
