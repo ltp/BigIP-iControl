@@ -198,6 +198,13 @@ our $modules    = {
 							download_file		=> {file_name => 1, chunk_size => 1, file_offset => 1},
 							download_configuration	=> {config_name => 1, chunk_size => 1, file_offset => 1}
 							},
+				SoftwareManagement =>	{
+							delete_volume		=> {volume => 1},
+							get_all_software_status	=> 0,
+							get_boot_location	=> 0,
+							get_hotfix_information	=> 0,
+							install_software_image_v2 => {volume => 1, product => 1, version => 1, build => 1, create_volume => 1, reboot => 1, retry => 1 }
+							},
 				SystemInfo	=>	{
 							get_product_information => 0,
 							get_system_information	=> 0,
@@ -446,6 +453,7 @@ sub BEGIN {
                 '{urn:iControl}System.Services.ServiceAction'				=> 1,
                 '{urn:iControl}System.Services.ServiceStatusType'			=> 1,
                 '{urn:iControl}System.Services.ServiceType'				=> 1,
+                '{urn:iControl}System.SoftwareManagement.SoftwareBlockDeviceAgent'	=> 1,
                 '{urn:iControl}System.Statistics.GtmIQueryState'			=> 1,
                 '{urn:iControl}System.Statistics.GtmPathStatisticObjectType'		=> 1,
 	};
@@ -700,7 +708,7 @@ sub __zero_fill {
 	return ($_[0] < 10 ? '0' . $_[0] : $_[0])
 }
 
-=head3 get_system_information
+=head3 get_product_information
 
 Gets a ProductInformation struct containing the identifying attributes of installed product.
 The struct information is described below;
@@ -1114,6 +1122,68 @@ sub download_file {
 	}
 
 	return $output	
+}
+
+=head3 delete_volume ()
+
+Deletes a volume from the system, or from all blades on a chassis. 
+
+=cut
+
+sub delete_volume {
+	$_[0]->_request(module => 'System', interface => 'SoftwareManagement', method => 'delete_volume', data => {volume => $_[1]});
+}
+
+=head3 get_all_software_status ()
+
+A structure that contains information on software status. This includes items like product, version, build, and (live install) completion status.
+
+	Member			Type		Description
+	----------		----------	----------
+	installation_id 	InstallationID	The location for the status.
+	product			String		The product you are installing (ex: BIGIP) (or, product which is installed).
+	version			String		The version of product (ex: 9.6.0).
+	build 			String		The build number you are installing.
+	base_build 		String 		The base build (used for hotfixes).
+	active 			boolean 	Whether the boot location is active.
+	edition 		String 		Gives the edition, e.g."Hotfix HF4" (used for hotfixes).
+	status 			String 		A string indicating the status of the live install process. The status strings are "none", "audited", "retry", "upgrade needed", "waiting for image", "installing nn.mmm pct", "complete", "cancelling", "cancelled", and "failed". The "failed" string may have text giving a reason after it. The "waiting for image" string may have further text after it describing the image being awaited. A client should ignore any strings returned other than these. You can use the status field to monitor the completion status of a live install operation in process. When checking status, you should ensure that the product, version, and build reflect the software whose status you are interested in (because there are a few scenarios where the product, version, and build for a volume may not be updated as quickly as you might expect).
+
+=cut
+
+sub get_all_software_status {
+	return @{$_[0]->_request(module => 'System', interface => 'SoftwareManagement', method => 'get_all_software_status')};
+}
+
+=head3 get_boot_location ()
+
+Gets the configured default boot location, which will be the location that boots after the system reboots.
+
+=cut
+
+sub get_boot_location {
+	return $_[0]->_request(module => 'System', interface => 'SoftwareManagement', method => 'get_boot_location');
+}
+
+=head3 get_hotfix_information ()
+
+Gets information on any hotfixes applied to the system. There may not be any hotfix installed, in which case the returned sequence is empty.
+
+=cut
+
+sub get_hotfix_information {
+	return @{$_[0]->_request(module => 'System', interface => 'SoftwareManagement', method => 'get_hotfix_information')};
+}
+
+=head3 install_software_image_v2 ()
+
+Initiates an install of a software image on all blades installed on one chassis. 
+
+=cut
+
+sub install_software_image_v2 {
+        my ($self, $volume, $product, $version, $build, $create_volume, $reboot, $retry)=@_;
+	$_[0]->_request(module => 'System', interface => 'SoftwareManagement', method => 'install_software_image_v2', data => { volume => $volume, product => $product, version => $version, build => $build, create_volume => $create_volume, reboot => $reboot, retry => $retry});
 }
 
 =head3 get_interface_list ()
