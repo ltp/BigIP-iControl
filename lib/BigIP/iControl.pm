@@ -229,6 +229,10 @@ our $modules    = {
 							get_list                => 0,
 							get_service_status      => {services => 1},
 							get_all_service_statuses=> 0
+							},
+				Session        =>       {
+							get_active_folder       => 0,
+							set_active_folder       => {folder => 1},
 							}
 				},
 	WebAccelerator	=>	{}
@@ -926,6 +930,26 @@ sub get_all_service_statuses {
 	}
 
 	return %res
+}
+
+=head3 get_active_folder ()
+
+Gets the active folder.
+
+=cut
+
+sub get_active_folder {
+	return $_[0]->_request(module => 'System', interface => 'Session', method => 'get_active_folder');
+}
+
+=head3 set_active_folder ()
+
+Sets the active folder. Most configuration objects reside in folders (see the Management::Folder interface), but continually specifying the full path to name an object can be wearing. For ease, an "active folder" can be specified. When creating or accessing objects and a full object path is not specified (i.e., the object path does not begin with a slash (/)), the active folder is prepended to the object name. Thus if the name for an object to be created is specified as "repository-a" and the active folder is /george/server, the full path for the created object is /george/server/repository-a. Note that relative paths are also allowed in the object identifier, so that if the active folder is /george/server and the given object identifier is virtual/repository-a, then the full object path is /george/server/virtual/repository-a. The active folder may be the root folder (/), but that is only usable when querying. If for some reason, neither the currently active folder nor the newly requested active folder exist, the currently active folder will be set to the user's default folder.
+
+=cut
+
+sub set_active_folder {
+	return $_[0]->_request(module => 'System', interface => 'Session', method => 'set_active_folder', data => { folder => $_[1] })
 }
 
 =head3 save_configuration ($filename)
