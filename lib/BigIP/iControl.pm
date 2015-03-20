@@ -232,6 +232,7 @@ our $modules    = {
 							},
 				Session        =>       {
 							get_active_folder       => 0,
+							get_session_identifier  => 0,
 							set_active_folder       => {folder => 1},
 							}
 				},
@@ -940,6 +941,27 @@ Gets the active folder.
 
 sub get_active_folder {
 	return $_[0]->_request(module => 'System', interface => 'Session', method => 'get_active_folder');
+}
+
+=head3 get_session_identifier ()
+
+Gets a new session identifier. This identifier is a value which uniquely identifies a user session. Once retrieved by a client, it may be included in any subsequent requests to notify the iControl portal that a specific request should be executed in the context of the session associated with that identifier. Use of this identifier is completely optional. If it is not included in an iControl request, the session key defaults to the user name. Note that this is even true if you have retrieved a unique session identifier. It is also possible to have more than one such unique session identifier active at the same time. However, it is important to understand that each session key, whether the unique identifier or the default user name represent distinct sessions. Changing a session variable in one session does not effect the variable in any other session. On the other hand, if different clients have the same session key and one changes a session variable, the others will see it. The important distinction is not the client being run and not the user running it, but the session key for each request. When used, this session identifier must be passed to the iControl portal via either an HTTP header or a SOAP header element. There is no preference for which transport is used, as the portal will pick up either. The client is free to use whichever is easier to work with in the client's SOAP package. If for some reason, conflicting values are set in the HTTP header and SOAP header element, the SOAP header element value will take precedence. The HTTP header holding the session identifier is named "X-IControl-Session". If used, its value must be set to the text representation of the session identifier. Thus in the HTTP request, the header would look like, e.g., X-iControl-Session: 14. Most SOAP packages include a straightforward way to add an HTTP header to the HTTP request, so reference your documentation. The SOAP header element is named "session". If used, its value must be a SOAP integer element holding the session identifier. If this client is intended to work with older versions of iControl, be aware that the mustUnderstand SOAP header element attribute must be set to 0. Reference your SOAP package documentation for details for adding a SOAP header to a request.
+
+=cut
+
+sub get_session_identifier {
+	return $_[0]->_request(module => 'System', interface => 'Session', method => 'get_session_identifier');
+}
+
+=head3 set_session ()
+
+Sets session to a provided value (it has to be generated using get_session_identifier() call). All consecutive iControl calls will belong to this session. This allows you to run independent, stateful sessions for the same username/password combination without interference.
+
+=cut
+
+sub set_session {
+	my ($self, $session) = @_;
+	$self->{_client}->transport->http_request->header('X-iControl-Session' => $session);
 }
 
 =head3 set_active_folder ()
