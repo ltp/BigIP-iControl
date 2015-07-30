@@ -131,7 +131,15 @@ our $modules    = {
 							get_key_file_v2		=> {profile_names => 1},
 							set_chain_file_v2	=> {profile_names => 1, chains => 1},
 							set_key_certificate_file => {profile_names => 1, keys => 1, certs => 1},
-							}
+							},
+				ProfileServerSSL =>	{
+							get_list		=> 0,
+							get_certificate_file_v2	=> {profile_names => 1},
+							get_chain_file_v2	=> {profile_names => 1},
+							get_key_file_v2		=> {profile_names => 1},
+							set_chain_file_v2	=> {profile_names => 1, chains => 1},
+							set_key_certificate_file => {profile_names => 1, keys => 1, certs => 1},
+							},
 				},
 	Management	=>	{
 				DBVariable	=>	{
@@ -2419,6 +2427,66 @@ sub set_clientssl_key_cert {
 Returns the value of the specified db variable.
 
 =cut
+
+=head3 get_serverssl_list ()
+
+Gets a list of all server SSL profiles.
+
+=cut
+
+sub get_serverssl_list {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_list') }
+}
+
+=head3 get_serverssl_cert ()
+
+Gets the name of the certificate file objects used by a set of server SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_serverssl_cert {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_certificate_file_v2', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_serverssl_chain ()
+
+Gets the names of the certificate file objects used as the certificate chain files for a set of server SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_serverssl_chain {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_chain_file_v2', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_serverssl_key ()
+
+Gets the names of the certificate key file objects used by a set of server SSL profiles. Certificate key file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_serverssl_key {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_key_file_v2', data => {profile_names => $_[1]}) }
+}
+
+=head3 set_serverssl_chain ()
+
+Gets the names of the certificate file objects used as the certificate chain files for a set of server SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub set_serverssl_chain {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'set_chain_file_v2', data => {profile_names => $_[1], chains => $_[2]})
+}
+
+=head3 set_serverssl_key_cert ()
+
+Sets the key and certificate file object names to be used by BIG-IP acting as an SSL server for a set of server SSL profiles. Key and certificate file objects are managed by the Management::KeyCertificate interface. These values can be retrieved via the get_key_file_v2 and get_certificate_file_v2 methods.
+
+=cut
+
+sub set_serverssl_key_cert {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'set_key_certificate_file', data => {profile_names => $_[1], keys => $_[2], certs => $_[3]})
+}
 
 sub get_db_variable {
 	my ($self,$var)	= @_;
