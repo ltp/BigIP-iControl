@@ -89,6 +89,7 @@ our $modules    = {
 							get_default_pool_name	=> 'virtual_servers',
 							get_destination		=> 'virtual_servers',
 							get_enabled_state	=> 'virtual_servers',
+							get_profile		=> 'virtual_servers',
 							get_protocol		=> 'virtual_servers',
 							get_statistics		=> 'virtual_servers',
 							get_all_statistics	=> 0,
@@ -125,21 +126,32 @@ our $modules    = {
 							delete_string_class_member=> 'class_members',
 							},
 				ProfileClientSSL =>	{
+							delete_profile		=> {profile_names => 1},
+							get_default_profile	=> {profile_names => 1},
 							get_list		=> 0,
 							get_certificate_file_v2	=> {profile_names => 1},
 							get_chain_file_v2	=> {profile_names => 1},
 							get_key_file_v2		=> {profile_names => 1},
+							is_system_profile	=> {profile_names => 1},
 							set_chain_file_v2	=> {profile_names => 1, chains => 1},
 							set_key_certificate_file => {profile_names => 1, keys => 1, certs => 1},
 							},
 				ProfileServerSSL =>	{
+							delete_profile		=> {profile_names => 1},
+							get_default_profile	=> {profile_names => 1},
 							get_list		=> 0,
 							get_certificate_file_v2	=> {profile_names => 1},
 							get_chain_file_v2	=> {profile_names => 1},
 							get_key_file_v2		=> {profile_names => 1},
+							is_system_profile	=> {profile_names => 1},
 							set_chain_file_v2	=> {profile_names => 1, chains => 1},
 							set_key_certificate_file => {profile_names => 1, keys => 1, certs => 1},
 							},
+				Monitor		=>	{
+							get_template_list	=> 0,
+							get_template_integer_property => {template_names =>1, property_types => 1},
+							get_template_string_property => {template_names =>1, property_types => 1},
+							}
 				},
 	Management	=>	{
 				DBVariable	=>	{
@@ -1730,6 +1742,17 @@ sub get_vs_statistics_stringified {
 	return __process_statistics($self->get_vs_statistics($vs));
 }
 
+=head3 get_ltm_vs_profile ($virtual_server)
+
+Gets the lists of profiles the specified virtual servers are associated with.
+
+=cut
+
+sub get_ltm_vs_profile {
+	my ($self, $vs) = @_;
+	return @{@{$self->_request(module => 'LocalLB', interface => 'VirtualServer', method => 'get_profile', data => {virtual_servers => [$vs]})}[0]}
+}
+
 =head3 get_ltm_vs_rules ($virtual_server)
 
 =cut
@@ -2359,6 +2382,26 @@ sub set_ltm_string_class_member {
 			)
 }
 
+=head3 delete_clientssl_profile ()
+
+Deletes the specified client SSL profiles.
+
+=cut
+
+sub delete_clientssl_profile {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'delete_profile', data => {profile_names => $_[1]})
+}
+
+=head3 get_clientssl_default_profile ()
+
+Gets the names of the default profiles from which the specified profiles will derive default values for its attributes.
+
+=cut
+
+sub get_clientssl_default_profile {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_default_profile', data => {profile_names => $_[1]}) }
+}
+
 =head3 get_clientssl_list ()
 
 Gets a list of all client SSL profiles.
@@ -2399,6 +2442,16 @@ sub get_clientssl_key {
         return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_key_file_v2', data => {profile_names => $_[1]}) }
 }
 
+=head3 is_clientssl_system_profile ()
+
+Determines whether the specified client SSL profiles are system profiles. A system profile is a profile pre-configured on the system, ready for use. Non-system profiles are profiles created or modified by a user. Note that if a system profile is modified, it is no longer considered a system profile. (See also is_base_profile).
+
+=cut
+
+sub is_clientssl_system_profile {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'is_system_profile', data => {profile_names => $_[1]}) }
+}
+
 =head3 set_clientssl_chain ()
 
 Sets the certificate file object names for the chain certificate files for the specified client SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
@@ -2419,14 +2472,25 @@ sub set_clientssl_key_cert {
         return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'set_key_certificate_file', data => {profile_names => $_[1], keys => $_[2], certs => $_[3]})
 }
 
-=head3 get_db_variable ( $VARIABLE )
+=head3 delete_serverssl_profile ()
 
-	# Prints the value of the configsync.state database variable.
-	print "Config state is " . $ic->get_db_variable('configsync.state') . "\n";
-
-Returns the value of the specified db variable.
+Deletes the specified server SSL profiles.
 
 =cut
+
+sub delete_serverssl_profile {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'delete_profile', data => {profile_names => $_[1]})
+}
+
+=head3 get_serverssl_default_profile ()
+
+Gets the names of the default profiles from which the specified profiles will derive default values for its attributes.
+
+=cut
+
+sub get_serverssl_default_profile {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_default_profile', data => {profile_names => $_[1]}) }
+}
 
 =head3 get_serverssl_list ()
 
@@ -2468,6 +2532,16 @@ sub get_serverssl_key {
         return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_key_file_v2', data => {profile_names => $_[1]}) }
 }
 
+=head3 is_serverssl_system_profile ()
+
+Determines whether the specified server SSL profiles are system profiles. A system profile is a profile pre-configured on the system, ready for use. Non-system profiles are profiles created or modified by a user. Note that if a system profile is modified, it is no longer considered a system profile. (See also is_base_profile).
+
+=cut
+
+sub is_serverssl_system_profile {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'is_system_profile', data => {profile_names => $_[1]}) }
+}
+
 =head3 set_serverssl_chain ()
 
 Gets the names of the certificate file objects used as the certificate chain files for a set of server SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
@@ -2487,6 +2561,45 @@ Sets the key and certificate file object names to be used by BIG-IP acting as an
 sub set_serverssl_key_cert {
         return $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'set_key_certificate_file', data => {profile_names => $_[1], keys => $_[2], certs => $_[3]})
 }
+
+=head3 get_monitor_list
+
+Gets the list of monitor templates.
+
+=cut
+
+sub get_monitor_list {
+        return @{$_[0]->_request(module => 'LocalLB', interface => 'Monitor', method => 'get_template_list')}
+}
+
+=head3 get_monitor_integer_property
+
+Gets the integer property values of the specified monitor templates.
+
+=cut
+
+sub get_monitor_integer_property {
+        return @{$_[0]->_request(module => 'LocalLB', interface => 'Monitor', method => 'get_template_integer_property', data => {template_names => $_[1], property_types => $_[2]})}
+}
+
+=head3 get_monitor_string_property
+
+Gets a string property values of the specified monitor templates.
+
+=cut
+
+sub get_monitor_string_property {
+        return @{$_[0]->_request(module => 'LocalLB', interface => 'Monitor', method => 'get_template_string_property', data => {template_names => $_[1], property_types => $_[2]})}
+}
+
+=head3 get_db_variable ( $VARIABLE )
+
+	# Prints the value of the configsync.state database variable.
+	print "Config state is " . $ic->get_db_variable('configsync.state') . "\n";
+
+Returns the value of the specified db variable.
+
+=cut
 
 sub get_db_variable {
 	my ($self,$var)	= @_;
