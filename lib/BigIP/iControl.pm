@@ -1749,8 +1749,7 @@ Gets the lists of profiles the specified virtual servers are associated with.
 =cut
 
 sub get_ltm_vs_profile {
-	my ($self, $vs) = @_;
-	return @{@{$self->_request(module => 'LocalLB', interface => 'VirtualServer', method => 'get_profile', data => {virtual_servers => [$vs]})}[0]}
+	return @{ $_[0]->_request(module => 'LocalLB', interface => 'VirtualServer', method => 'get_profile', data => {virtual_servers => $_[1]}) }
 }
 
 =head3 get_ltm_vs_rules ($virtual_server)
