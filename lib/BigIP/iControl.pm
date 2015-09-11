@@ -151,6 +151,8 @@ our $modules    = {
 							get_template_list	=> 0,
 							get_template_integer_property => {template_names =>1, property_types => 1},
 							get_template_string_property => {template_names =>1, property_types => 1},
+							set_template_integer_property => {template_names =>1, values => 1},
+							set_template_string_property => {template_names =>1, values => 1},
 							}
 				},
 	Management	=>	{
@@ -2589,6 +2591,26 @@ Gets a string property values of the specified monitor templates.
 
 sub get_monitor_string_property {
         return @{$_[0]->_request(module => 'LocalLB', interface => 'Monitor', method => 'get_template_string_property', data => {template_names => $_[1], property_types => $_[2]})}
+}
+
+=head3 set_monitor_integer_property
+
+Sets an integer property values of the specified monitor templates.
+
+=cut
+
+sub set_monitor_integer_property {
+        $_[0]->_request(module => 'LocalLB', interface => 'Monitor', method => 'set_template_integer_property', data => {template_names => $_[1], values => $_[2]})
+}
+
+=head3 set_monitor_string_property
+
+Sets a string property values of the specified monitor templates.
+
+=cut
+
+sub set_monitor_string_property {
+        $_[0]->_request(module => 'LocalLB', interface => 'Monitor', method => 'set_template_string_property', data => {template_names => $_[1], values => $_[2]})
 }
 
 =head3 get_db_variable ( $VARIABLE )
