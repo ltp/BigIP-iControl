@@ -5,7 +5,7 @@ use warnings;
 
 use Carp qw(confess croak);
 use Exporter;
-use SOAP::Lite;
+use SOAP::Lite; # +trace => 'all';
 use MIME::Base64;
 use Math::BigInt;
 
@@ -127,6 +127,7 @@ our $modules    = {
 							},
 				ProfileClientSSL =>	{
 							delete_profile		=> {profile_names => 1},
+							get_cipher_list		=> {profile_names => 1},
 							get_default_profile	=> {profile_names => 1},
 							get_list		=> 0,
 							get_certificate_file_v2	=> {profile_names => 1},
@@ -138,6 +139,7 @@ our $modules    = {
 							},
 				ProfileServerSSL =>	{
 							delete_profile		=> {profile_names => 1},
+							get_cipher_list		=> {profile_names => 1},
 							get_default_profile	=> {profile_names => 1},
 							get_list		=> 0,
 							get_certificate_file_v2	=> {profile_names => 1},
@@ -2393,6 +2395,16 @@ sub delete_clientssl_profile {
         return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'delete_profile', data => {profile_names => $_[1]})
 }
 
+=head3 get_clientssl_ciphers ()
+
+Gets the cipher lists for the specified client SSL profiles.
+
+=cut
+
+sub get_clientssl_ciphers {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_cipher_list', data => {profile_names => $_[1]}) }
+}
+
 =head3 get_clientssl_default_profile ()
 
 Gets the names of the default profiles from which the specified profiles will derive default values for its attributes.
@@ -2481,6 +2493,16 @@ Deletes the specified server SSL profiles.
 
 sub delete_serverssl_profile {
         return $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'delete_profile', data => {profile_names => $_[1]})
+}
+
+=head3 get_serverssl_ciphers ()
+
+Gets the cipher lists for the specified server SSL profiles.
+
+=cut
+
+sub get_serverssl_ciphers {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_cipher_list', data => {profile_names => $_[1]}) }
 }
 
 =head3 get_serverssl_default_profile ()
