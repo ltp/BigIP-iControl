@@ -130,11 +130,15 @@ our $modules    = {
 							get_cipher_list		=> {profile_names => 1},
 							get_default_profile	=> {profile_names => 1},
 							get_list		=> 0,
+							get_ca_file_v2		=> {profile_names => 1},
 							get_certificate_file_v2	=> {profile_names => 1},
 							get_chain_file_v2	=> {profile_names => 1},
+							get_client_certificate_ca_file_v2 => {profile_names => 1},
 							get_key_file_v2		=> {profile_names => 1},
 							is_system_profile	=> {profile_names => 1},
+							set_ca_file_v2		=> {profile_names => 1, cas => 1},
 							set_chain_file_v2	=> {profile_names => 1, chains => 1},
+							set_client_certificate_ca_file_v2 => {profile_names => 1, client_cert_cas => 1},
 							set_key_certificate_file => {profile_names => 1, keys => 1, certs => 1},
 							},
 				ProfileServerSSL =>	{
@@ -142,10 +146,12 @@ our $modules    = {
 							get_cipher_list		=> {profile_names => 1},
 							get_default_profile	=> {profile_names => 1},
 							get_list		=> 0,
+							get_ca_file_v2		=> {profile_names => 1},
 							get_certificate_file_v2	=> {profile_names => 1},
 							get_chain_file_v2	=> {profile_names => 1},
 							get_key_file_v2		=> {profile_names => 1},
 							is_system_profile	=> {profile_names => 1},
+							set_ca_file_v2		=> {profile_names => 1, cas => 1},
 							set_chain_file_v2	=> {profile_names => 1, chains => 1},
 							set_key_certificate_file => {profile_names => 1, keys => 1, certs => 1},
 							},
@@ -2425,6 +2431,16 @@ sub get_clientssl_list {
         return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_list') }
 }
 
+=head3 get_clientssl_ca ()
+
+Gets the certificate file object names for the certificate authority files for the specified client SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_clientssl_ca {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_ca_file_v2', data => {profile_names => $_[1]}) }
+}
+
 =head3 get_clientssl_cert ()
 
 Gets the certificate filenames to be used by BIG-IP acting as an SSL server. Certificate file objects are managed by the Management::KeyCertificate interface.
@@ -2443,6 +2459,16 @@ Gets the certificate file object names for the chain certificate files for the s
 
 sub get_clientssl_chain {
         return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_chain_file_v2', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_clientssl_client_ca ()
+
+Gets the certificate file object names for the client certificate authority files for the specified client SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_clientssl_client_ca {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_client_certificate_ca_file_v2', data => {profile_names => $_[1]}) }
 }
 
 =head3 get_clientssl_key ()
@@ -2473,6 +2499,26 @@ Sets the certificate file object names for the chain certificate files for the s
 
 sub set_clientssl_chain {
         return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'set_chain_file_v2', data => {profile_names => $_[1], chains => $_[2]})
+}
+
+=head3 set_clientssl_ca ()
+
+Sets the certificate file object names for the certificate authority files for the specified client SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub set_clientssl_ca {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'set_ca_file_v2', data => {profile_names => $_[1], cas => $_[2]})
+}
+
+=head3 set_clientssl_client_ca ()
+
+Sets the certificate file object names for the client certificate authority files for the specified client SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub set_clientssl_client_ca {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'set_client_certificate_ca_file_v2', data => {profile_names => $_[1], client_cert_cas => $_[2]})
 }
 
 =head3 set_clientssl_key_cert ()
@@ -2525,6 +2571,16 @@ sub get_serverssl_list {
         return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_list') }
 }
 
+=head3 get_serverssl_ca ()
+
+Gets the names of the certificate file objects used as certificate authority files for a set of server SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_serverssl_ca {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_ca_file_v2', data => {profile_names => $_[1]}) }
+}
+
 =head3 get_serverssl_cert ()
 
 Gets the name of the certificate file objects used by a set of server SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
@@ -2563,6 +2619,16 @@ Determines whether the specified server SSL profiles are system profiles. A syst
 
 sub is_serverssl_system_profile {
         return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'is_system_profile', data => {profile_names => $_[1]}) }
+}
+
+=head3 set_serverssl_ca ()
+
+Sets the names of the certificate file objects used as certificate authority files for a set of server SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub set_serverssl_ca {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'set_ca_file_v2', data => {profile_names => $_[1], cas => $_[2]})
 }
 
 =head3 set_serverssl_chain ()
