@@ -5,7 +5,7 @@ use warnings;
 
 use Carp qw(confess croak);
 use Exporter;
-use SOAP::Lite;
+use SOAP::Lite; # +trace => 'all';
 use MIME::Base64;
 use Math::BigInt;
 
@@ -89,6 +89,7 @@ our $modules    = {
 							get_default_pool_name	=> 'virtual_servers',
 							get_destination		=> 'virtual_servers',
 							get_enabled_state	=> 'virtual_servers',
+							get_profile		=> 'virtual_servers',
 							get_protocol		=> 'virtual_servers',
 							get_statistics		=> 'virtual_servers',
 							get_all_statistics	=> 0,
@@ -123,6 +124,43 @@ our $modules    = {
 							set_string_class_member_data_value	=> {class_members => 1, values => 1},
 							add_string_class_member	=> 'class_members',
 							delete_string_class_member=> 'class_members',
+							},
+				ProfileClientSSL =>	{
+							delete_profile		=> {profile_names => 1},
+							get_cipher_list		=> {profile_names => 1},
+							get_default_profile	=> {profile_names => 1},
+							get_list		=> 0,
+							get_ca_file_v2		=> {profile_names => 1},
+							get_certificate_file_v2	=> {profile_names => 1},
+							get_chain_file_v2	=> {profile_names => 1},
+							get_client_certificate_ca_file_v2 => {profile_names => 1},
+							get_key_file_v2		=> {profile_names => 1},
+							is_system_profile	=> {profile_names => 1},
+							set_ca_file_v2		=> {profile_names => 1, cas => 1},
+							set_chain_file_v2	=> {profile_names => 1, chains => 1},
+							set_client_certificate_ca_file_v2 => {profile_names => 1, client_cert_cas => 1},
+							set_key_certificate_file => {profile_names => 1, keys => 1, certs => 1},
+							},
+				ProfileServerSSL =>	{
+							delete_profile		=> {profile_names => 1},
+							get_cipher_list		=> {profile_names => 1},
+							get_default_profile	=> {profile_names => 1},
+							get_list		=> 0,
+							get_ca_file_v2		=> {profile_names => 1},
+							get_certificate_file_v2	=> {profile_names => 1},
+							get_chain_file_v2	=> {profile_names => 1},
+							get_key_file_v2		=> {profile_names => 1},
+							is_system_profile	=> {profile_names => 1},
+							set_ca_file_v2		=> {profile_names => 1, cas => 1},
+							set_chain_file_v2	=> {profile_names => 1, chains => 1},
+							set_key_certificate_file => {profile_names => 1, keys => 1, certs => 1},
+							},
+				Monitor		=>	{
+							get_template_list	=> 0,
+							get_template_integer_property => {template_names =>1, property_types => 1},
+							get_template_string_property => {template_names =>1, property_types => 1},
+							set_template_integer_property => {template_names =>1, values => 1},
+							set_template_string_property => {template_names =>1, values => 1},
 							}
 				},
 	Management	=>	{
@@ -229,6 +267,16 @@ our $modules    = {
 							get_list                => 0,
 							get_service_status      => {services => 1},
 							get_all_service_statuses=> 0
+							},
+				Session        =>       {
+							get_active_folder       => 0,
+							get_recursive_query_state => 0,
+							get_session_identifier  => 0,
+							rollback_transaction	=> 0,
+							set_active_folder       => {folder => 1},
+							set_recursive_query_state => {state => 1},
+							start_transaction	=> 0,
+							submit_transaction	=> 0,
 							}
 				},
 	WebAccelerator	=>	{}
@@ -928,6 +976,97 @@ sub get_all_service_statuses {
 	return %res
 }
 
+=head3 get_active_folder ()
+
+Gets the active folder.
+
+=cut
+
+sub get_active_folder {
+	return $_[0]->_request(module => 'System', interface => 'Session', method => 'get_active_folder');
+}
+
+=head3 get_recursive_query_state ()
+
+Gets the state to recursively query the contents of the active folder.
+
+=cut
+
+sub get_recursive_query_state {
+	return $_[0]->_request(module => 'System', interface => 'Session', method => 'get_recursive_query_state');
+}
+
+=head3 get_session_identifier ()
+
+Gets a new session identifier. This identifier is a value which uniquely identifies a user session. Once retrieved by a client, it may be included in any subsequent requests to notify the iControl portal that a specific request should be executed in the context of the session associated with that identifier. Use of this identifier is completely optional. If it is not included in an iControl request, the session key defaults to the user name. Note that this is even true if you have retrieved a unique session identifier. It is also possible to have more than one such unique session identifier active at the same time. However, it is important to understand that each session key, whether the unique identifier or the default user name represent distinct sessions. Changing a session variable in one session does not effect the variable in any other session. On the other hand, if different clients have the same session key and one changes a session variable, the others will see it. The important distinction is not the client being run and not the user running it, but the session key for each request. When used, this session identifier must be passed to the iControl portal via either an HTTP header or a SOAP header element. There is no preference for which transport is used, as the portal will pick up either. The client is free to use whichever is easier to work with in the client's SOAP package. If for some reason, conflicting values are set in the HTTP header and SOAP header element, the SOAP header element value will take precedence. The HTTP header holding the session identifier is named "X-IControl-Session". If used, its value must be set to the text representation of the session identifier. Thus in the HTTP request, the header would look like, e.g., X-iControl-Session: 14. Most SOAP packages include a straightforward way to add an HTTP header to the HTTP request, so reference your documentation. The SOAP header element is named "session". If used, its value must be a SOAP integer element holding the session identifier. If this client is intended to work with older versions of iControl, be aware that the mustUnderstand SOAP header element attribute must be set to 0. Reference your SOAP package documentation for details for adding a SOAP header to a request.
+
+=cut
+
+sub get_session_identifier {
+	return $_[0]->_request(module => 'System', interface => 'Session', method => 'get_session_identifier');
+}
+
+=head3 rollback_transaction ()
+
+Roll back the transaction. When called, all of the requests submitted since start_transaction was called are un-done. The configuration will remain unchanged. If no transaction is open, an error is signaled. If no requests have been queued in the transaction, nothing is done and no error is signaled.
+
+=cut
+
+sub rollback_transaction {
+	return $_[0]->_request(module => 'System', interface => 'Session', method => 'rollback_transaction');
+}
+
+=head3 set_session ()
+
+Sets session to a provided value (it has to be generated using get_session_identifier() call). All consecutive iControl calls will belong to this session. This allows you to run independent, stateful sessions for the same username/password combination without interference.
+
+=cut
+
+sub set_session {
+	my ($self, $session) = @_;
+	$self->{_client}->transport->http_request->header('X-iControl-Session' => $session);
+}
+
+=head3 set_active_folder ()
+
+Sets the active folder. Most configuration objects reside in folders (see the Management::Folder interface), but continually specifying the full path to name an object can be wearing. For ease, an "active folder" can be specified. When creating or accessing objects and a full object path is not specified (i.e., the object path does not begin with a slash (/)), the active folder is prepended to the object name. Thus if the name for an object to be created is specified as "repository-a" and the active folder is /george/server, the full path for the created object is /george/server/repository-a. Note that relative paths are also allowed in the object identifier, so that if the active folder is /george/server and the given object identifier is virtual/repository-a, then the full object path is /george/server/virtual/repository-a. The active folder may be the root folder (/), but that is only usable when querying. If for some reason, neither the currently active folder nor the newly requested active folder exist, the currently active folder will be set to the user's default folder.
+
+=cut
+
+sub set_active_folder {
+	return $_[0]->_request(module => 'System', interface => 'Session', method => 'set_active_folder', data => { folder => $_[1] })
+}
+
+=head3 set_recursive_query_state ()
+
+Sets the state to recursively query the contents of the active folder. If not set, any query will return objects in the active folder only. If set, any query will return objects in the active folder, plus objects in any sub-folders under that active folder no matter how deeply nested.
+
+=cut
+
+sub set_recursive_query_state {
+	return $_[0]->_request(module => 'System', interface => 'Session', method => 'set_recursive_query_state', data => { state => $_[1] })
+}
+
+=head3 start_transaction ()
+
+Start an iControl transaction, which combines the effects of a number of iControl methods into a single atomic transaction. Once an iControl client calls start_transaction, the handling of subsequent iControl requests changes until the client submits or rolls back the transaction, i.e. while the transaction is open. It is important to understand the characteristics of iControl requests made in this mode. iControl requests which modify the configuration are submitted for subsequent execution. The requests do not affect the configuration at the time they are made. iControl requests which query the configuration are executed immediately and do not see the effects of a pending transaction. iControl modify requests made outside a session with an open transaction affect the configuration immediately and do not see effects of any pending transactions. A transaction remains open until submit_transaction or rollback_transaction is called or until it is idle for too long. Reporting errors also differ while a transaction is open. Some classes of errors (such as invalid arguments) are returned by the method itself. The context for these errors should thus be as clear as without a transaction. However, most errors will be returned by the submit_transaction call. Note that this can make it difficult to determine which iControl method caused the error. If an error occurs at any time during a transaction, the transaction remains open, but is marked as errant. When submit_transaction is subsequently called, the transaction will actually be deleted, as if rollback_transaction has been called. Note that even if an error occurs, submit_transaction or rollback_transaction still must be called to properly close it. Not all interfaces and methods support transactions. These methods are processed per normal, i.e., executed immediately and not as part of the transaction. The documentation includes a note for those interfaces and methods which do not. The contents of pending transaction cannot be queried or modified. Only one transaction can be open at the same time in a single user session.
+
+=cut
+
+sub start_transaction {
+	return $_[0]->_request(module => 'System', interface => 'Session', method => 'start_transaction');
+}
+
+=head3 submit_transaction ()
+
+Submit the transaction for execution. When called, all of the requests submitted since start_transaction was called are committed to the configuration as a single atomic transaction. If all of the requests succeed, the configuration is updated. If any of the requests fail, the transaction as a whole fails and the configuration remains unchanged. If an error is signaled, it may be from any of the submitted requests. Nothing outside the returned error message can indicate which request triggered the error. If no requests have been queued in the transaction, nothing is done and no error is signaled. If no transaction is open, an error is signaled.
+
+=cut
+
+sub submit_transaction {
+	return $_[0]->_request(module => 'System', interface => 'Session', method => 'submit_transaction');
+}
+
 =head3 save_configuration ($filename)
 
 	$ic->save_configuration('backup.ucs');
@@ -1613,6 +1752,16 @@ sub get_vs_statistics_stringified {
 	return __process_statistics($self->get_vs_statistics($vs));
 }
 
+=head3 get_ltm_vs_profile ($virtual_server)
+
+Gets the lists of profiles the specified virtual servers are associated with.
+
+=cut
+
+sub get_ltm_vs_profile {
+	return @{ $_[0]->_request(module => 'LocalLB', interface => 'VirtualServer', method => 'get_profile', data => {virtual_servers => $_[1]}) }
+}
+
 =head3 get_ltm_vs_rules ($virtual_server)
 
 =cut
@@ -2240,6 +2389,316 @@ sub set_ltm_string_class_member {
 								   ] 
 						} 
 			)
+}
+
+=head3 delete_clientssl_profile ()
+
+Deletes the specified client SSL profiles.
+
+=cut
+
+sub delete_clientssl_profile {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'delete_profile', data => {profile_names => $_[1]})
+}
+
+=head3 get_clientssl_ciphers ()
+
+Gets the cipher lists for the specified client SSL profiles.
+
+=cut
+
+sub get_clientssl_ciphers {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_cipher_list', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_clientssl_default_profile ()
+
+Gets the names of the default profiles from which the specified profiles will derive default values for its attributes.
+
+=cut
+
+sub get_clientssl_default_profile {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_default_profile', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_clientssl_list ()
+
+Gets a list of all client SSL profiles.
+
+=cut
+
+sub get_clientssl_list {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_list') }
+}
+
+=head3 get_clientssl_ca ()
+
+Gets the certificate file object names for the certificate authority files for the specified client SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_clientssl_ca {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_ca_file_v2', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_clientssl_cert ()
+
+Gets the certificate filenames to be used by BIG-IP acting as an SSL server. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_clientssl_cert {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_certificate_file_v2', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_clientssl_chain ()
+
+Gets the certificate file object names for the chain certificate files for the specified client SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_clientssl_chain {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_chain_file_v2', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_clientssl_client_ca ()
+
+Gets the certificate file object names for the client certificate authority files for the specified client SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_clientssl_client_ca {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_client_certificate_ca_file_v2', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_clientssl_key ()
+
+Gets the names of the certificate key file objects used by BIG-IP acting as an SSL server for a set of client SSL profiles. Certificate key file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_clientssl_key {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'get_key_file_v2', data => {profile_names => $_[1]}) }
+}
+
+=head3 is_clientssl_system_profile ()
+
+Determines whether the specified client SSL profiles are system profiles. A system profile is a profile pre-configured on the system, ready for use. Non-system profiles are profiles created or modified by a user. Note that if a system profile is modified, it is no longer considered a system profile. (See also is_base_profile).
+
+=cut
+
+sub is_clientssl_system_profile {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'is_system_profile', data => {profile_names => $_[1]}) }
+}
+
+=head3 set_clientssl_chain ()
+
+Sets the certificate file object names for the chain certificate files for the specified client SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub set_clientssl_chain {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'set_chain_file_v2', data => {profile_names => $_[1], chains => $_[2]})
+}
+
+=head3 set_clientssl_ca ()
+
+Sets the certificate file object names for the certificate authority files for the specified client SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub set_clientssl_ca {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'set_ca_file_v2', data => {profile_names => $_[1], cas => $_[2]})
+}
+
+=head3 set_clientssl_client_ca ()
+
+Sets the certificate file object names for the client certificate authority files for the specified client SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub set_clientssl_client_ca {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'set_client_certificate_ca_file_v2', data => {profile_names => $_[1], client_cert_cas => $_[2]})
+}
+
+=head3 set_clientssl_key_cert ()
+
+Sets the key and certificate file object names to be used by BIG-IP acting as an SSL server for a set of client SSL profiles. Key and certificate file objects are managed by the Management::KeyCertificate interface. These values can be retrieved via the get_key_file_v2 and get_certificate_file_v2 methods.
+
+=cut
+
+sub set_clientssl_key_cert {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'set_key_certificate_file', data => {profile_names => $_[1], keys => $_[2], certs => $_[3]})
+}
+
+=head3 delete_serverssl_profile ()
+
+Deletes the specified server SSL profiles.
+
+=cut
+
+sub delete_serverssl_profile {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'delete_profile', data => {profile_names => $_[1]})
+}
+
+=head3 get_serverssl_ciphers ()
+
+Gets the cipher lists for the specified server SSL profiles.
+
+=cut
+
+sub get_serverssl_ciphers {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_cipher_list', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_serverssl_default_profile ()
+
+Gets the names of the default profiles from which the specified profiles will derive default values for its attributes.
+
+=cut
+
+sub get_serverssl_default_profile {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_default_profile', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_serverssl_list ()
+
+Gets a list of all server SSL profiles.
+
+=cut
+
+sub get_serverssl_list {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_list') }
+}
+
+=head3 get_serverssl_ca ()
+
+Gets the names of the certificate file objects used as certificate authority files for a set of server SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_serverssl_ca {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_ca_file_v2', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_serverssl_cert ()
+
+Gets the name of the certificate file objects used by a set of server SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_serverssl_cert {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_certificate_file_v2', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_serverssl_chain ()
+
+Gets the names of the certificate file objects used as the certificate chain files for a set of server SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_serverssl_chain {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_chain_file_v2', data => {profile_names => $_[1]}) }
+}
+
+=head3 get_serverssl_key ()
+
+Gets the names of the certificate key file objects used by a set of server SSL profiles. Certificate key file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub get_serverssl_key {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'get_key_file_v2', data => {profile_names => $_[1]}) }
+}
+
+=head3 is_serverssl_system_profile ()
+
+Determines whether the specified server SSL profiles are system profiles. A system profile is a profile pre-configured on the system, ready for use. Non-system profiles are profiles created or modified by a user. Note that if a system profile is modified, it is no longer considered a system profile. (See also is_base_profile).
+
+=cut
+
+sub is_serverssl_system_profile {
+        return @{ $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'is_system_profile', data => {profile_names => $_[1]}) }
+}
+
+=head3 set_serverssl_ca ()
+
+Sets the names of the certificate file objects used as certificate authority files for a set of server SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub set_serverssl_ca {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'set_ca_file_v2', data => {profile_names => $_[1], cas => $_[2]})
+}
+
+=head3 set_serverssl_chain ()
+
+Gets the names of the certificate file objects used as the certificate chain files for a set of server SSL profiles. Certificate file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub set_serverssl_chain {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'set_chain_file_v2', data => {profile_names => $_[1], chains => $_[2]})
+}
+
+=head3 set_serverssl_key_cert ()
+
+Sets the key and certificate file object names to be used by BIG-IP acting as an SSL server for a set of server SSL profiles. Key and certificate file objects are managed by the Management::KeyCertificate interface. These values can be retrieved via the get_key_file_v2 and get_certificate_file_v2 methods.
+
+=cut
+
+sub set_serverssl_key_cert {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'set_key_certificate_file', data => {profile_names => $_[1], keys => $_[2], certs => $_[3]})
+}
+
+=head3 get_monitor_list
+
+Gets the list of monitor templates.
+
+=cut
+
+sub get_monitor_list {
+        return @{$_[0]->_request(module => 'LocalLB', interface => 'Monitor', method => 'get_template_list')}
+}
+
+=head3 get_monitor_integer_property
+
+Gets the integer property values of the specified monitor templates.
+
+=cut
+
+sub get_monitor_integer_property {
+        return @{$_[0]->_request(module => 'LocalLB', interface => 'Monitor', method => 'get_template_integer_property', data => {template_names => $_[1], property_types => $_[2]})}
+}
+
+=head3 get_monitor_string_property
+
+Gets a string property values of the specified monitor templates.
+
+=cut
+
+sub get_monitor_string_property {
+        return @{$_[0]->_request(module => 'LocalLB', interface => 'Monitor', method => 'get_template_string_property', data => {template_names => $_[1], property_types => $_[2]})}
+}
+
+=head3 set_monitor_integer_property
+
+Sets an integer property values of the specified monitor templates.
+
+=cut
+
+sub set_monitor_integer_property {
+        $_[0]->_request(module => 'LocalLB', interface => 'Monitor', method => 'set_template_integer_property', data => {template_names => $_[1], values => $_[2]})
+}
+
+=head3 set_monitor_string_property
+
+Sets a string property values of the specified monitor templates.
+
+=cut
+
+sub set_monitor_string_property {
+        $_[0]->_request(module => 'LocalLB', interface => 'Monitor', method => 'set_template_string_property', data => {template_names => $_[1], values => $_[2]})
 }
 
 =head3 get_db_variable ( $VARIABLE )
