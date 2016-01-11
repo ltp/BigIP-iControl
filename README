@@ -1,55 +1,955 @@
-BigIP-iControl
+NAME
+    BigIP::iControl - A Perl interface to the F5 iControl API
 
-The README is used to introduce the module and provide instructions on
-how to install the module, any machine dependencies it may have (for
-example C compilers and installed libraries) and any other information
-that should be provided before the module is installed.
+SYNOPSIS
+            use BigIP::iControl;
 
-A README file is required for CPAN modules since CPAN extracts the README
-file from a module distribution so that people browsing the archive
-can use it to get an idea of the module's uses. It is usually a good idea
-to provide version information here so that people can decide whether
-fixes for the module are worth downloading.
+            my $ic = BigIP::iControl->new(
+                                    server          => 'bigip.company.com',
+                                    username        => 'api_user',
+                                    password        => 'my_password',
+                                    port            => 443,
+                                    proto           => 'https'
+                            );
 
+            my $virtual     = ($ic->get_vs_list())[0];
 
-INSTALLATION
+            my %stats       = $ic->get_vs_statistics_stringified($virtual);;
 
-To install this module, run the following commands:
+            print '*'x50,"\nVirtual: $virtual\n",'*'x50,"\nTimestamp: $stats{timestamp}\n";
 
-	perl Makefile.PL
-	make
-	make test
-	make install
+            foreach my $s (sort keys %{$stats{stats}}) {
+                    print "$s\t$stats{stats}{$s}\n"
+            }
 
-SUPPORT AND DOCUMENTATION
+DESCRIPTION
+    This package provides a Perl interface to the F5 BigIP iControl API.
 
-After installing, you can find documentation for this module with the
-perldoc command.
+    The F5 BigIP iControl API is an open SOAP/XML for communicating with
+    supported F5 BigIP products.
 
-    perldoc BigIP::iControl
+    The primary aim of this package is to provide a simplified interface to
+    an already simple and intutive API and to allow the user to do more with
+    less code. By reducing the API invocations to methods returning simple
+    types, it is hoped that this module will provide a simple alternative
+    for common tasks.
 
-You can also look for information at:
+    The secondary aim for this package is to provide a simple interface for
+    accessing statistical data from the iControl API for monitoring,
+    recording, archival and display in other systems. This objective has
+    largely been obsoleted in v11 with the introduction of new statistical
+    monitoring and display features in the web UI.
 
-    RT, CPAN's request tracker (report bugs here)
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=BigIP-iControl
+    This package generally provides two methods for each each task; a raw
+    method typically returning the response as received from iControl, and a
+    "stringified" method returning a parsed response.
 
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/BigIP-iControl
+    In general, the stringified methods will typically fufill most
+    requirements and should usually be easier to use.
 
-    CPAN Ratings
-        http://cpanratings.perl.org/d/BigIP-iControl
+  METHODS
+   new (%args)
+            my $ic = BigIP::iControl->new(
+                                    server          => 'bigip.company.com',
+                                    username        => 'api_user',
+                                    password        => 'my_password',
+                                    port            => 443,
+                                    proto           => 'https',
+                                    verify_hostname => 0
+                            );
 
-    Search CPAN
-        http://search.cpan.org/dist/BigIP-iControl/
+    Constructor method. Creates a new BigIP::iControl object representing a
+    single interface into the iControl API of the target system.
 
+    Required parameters are:
+
+    server
+       The target F5 BIGIP device. The supplied value may be either an IP
+       address, FQDN or resolvable hostname.
+
+    username
+       The username with which to connect to the iControl API.
+
+    password
+       The password with which to connect to the iControl API.
+
+    port
+       The port on which to connect to the iControl API. If not specified
+       this value will default to 443.
+
+    proto
+       The protocol with to use for communications with the iControl API
+       (should be either http or https). If not specified this value will
+       default to https.
+
+    verify_hostname
+       If TRUE when used with a secure connection then the client will
+       ensure that the target server has a valid certificate matching the
+       expected hostname.
+
+       Defaults to false - that is; no certificate validation is performed.
+
+   get_product_information
+    Gets a ProductInformation struct containing the identifying attributes
+    of installed product. The struct information is described below;
+
+            Member                  Type            Description
+            ----------              ----------      ----------
+            product_code            String          The identifier describing the installed product.
+            product_version         String          The version of the installed product.
+            package_version         String          The package version of the installed product.
+            package_edition         String          The package edition of the installed product.
+            product_features        String []       A list of feature names available in the installed product.
+
+   get_system_information
+    Return a SystemInformation struct containing the identifying attributes
+    of the operating system. The struct information is described below;
+
+            Member                                  Type            Description
+            ----------                              ----------      ----------
+            system_name                             String          The name of the operating system implementation.
+            host_name                               String          The host name of the system.
+            os_release                              String          The release level of the operating system.
+            os_machine                              String          The hardware platform CPU type.
+            os_version                              String          The version string for the release of the operating system.
+            platform                                String          The platform of the device.
+            product_category                        String          The product category of the device.
+            chassis_serial                          String          The chassis serial number.
+            switch_board_serial                     String          The serial number of the switch board.
+            switch_board_part_revision              String          The part revision number of the switch board.
+            host_board_serial                       String          The serial number of the host motherboard.
+            host_board_part_revision                String          The part revision number of the host board.
+            annunciator_board_serial                String          The serial number of the annuciator board.
+            annunciator_board_part_revision         String          The part revision number of the annunciator board.
+
+   get_system_id ()
+    Gets the unique identifier for the system.
+
+   get_cpu_metrics ()
+    Gets the CPU metrics for the CPU(s) on the platform.
+
+   get_cpu_metrics_stringified ()
+    Gets the CPU metrics for the CPU(s) on the platform.
+
+   get_cpu_fan_speed ($cpu)
+    Returns the current CPU fan speed in RPM for the specified CPU.
+
+   get_cpu_temp ($cpu)
+    Returns the current CPU temperature degrees celcius for the specified
+    CPU.
+
+   get_cpu_usage_extended_information ()
+   get_cpu_usage_extended_information_stringified ()
+   get_cluster_list ()
+    Gets a list of the cluster names.
+
+   get_failover_mode ()
+    Gets the current fail-over mode that the device is running in.
+
+   get_failover_state ()
+    Gets the current fail-over state that the device is running in.
+
+   is_redundant ()
+    Returns a boolean indicating the redundancy state of the device.
+
+   get_cluster_enabled_state ()
+    Gets the cluster enabled states.
+
+   get_service_list ()
+    Returns a list of all supported services on this host.
+
+   get_service_status ()
+    Returns the status of the specified service.
+
+   get_all_service_statuses ()
+    Returns the status of all services.
+
+   save_configuration ($filename)
+            $ic->save_configuration('backup.ucs');
+
+            # is equivalent to
+
+            $ic->save_configuration('backup');
+        
+            # Not specifying a filename will use today's date in the
+            # format YYYYMMDD as the filename.
+
+            $ic->save_configuration();
+
+            # is equivalent to
+
+            $ic->save_configuration('today');
+
+    Saves the current configurations on the target device.
+
+    This method takes a single optional parameter; the filename to which the
+    configuration should be saved. The file extension .ucs will be suffixed
+    to the filename if missing from the supplied filename.
+
+    Specifying no optional filename parameter or using the filename today
+    will use the current date as the filename of the saved configuration
+    file in the format YYYYMMDD.
+
+   save_base_configuration ()
+            $ic->save_base_configuration();
+
+    Saves only the base configuration (VLANs, self IPs...). The filename
+    specified when used with this mode will be ignored, since configuration
+    will be saved to /config/bigip_base.conf by default.
+
+   save_high_level_configuration ()
+            $ic->save_high_level_configuration();
+
+    Saves only the high-level configuration (virtual servers, pools,
+    members, monitors...). The filename specified when used with this mode
+    will be ignored, since configuration will be saved to /config/bigip.conf
+    by default.
+
+   download_configuration ($filename)
+    This method downloads a saved UCS configuration from the target device.
+
+   get_configuration_list ()
+            my %config_list = $ic->get_configuration_list();
+
+    Returns a list of the configuration archives present on the system. the
+    list is returned as a hash with the name of the configuration archive as
+    the key, and the creation date of the configuration archive as the
+    value.
+
+    The creation date uses the native date format of:
+
+            Day Mon D HH:MM:SS YYYY
+
+    Where Day is the three-letter common abbreviation of the day name, Mon
+    is the three letter common abbreviation of the month name and D has the
+    value range 1-31 with no leading zeros.
+
+   delete_configuration ()
+            $ic->delete_configuration('file.ucs');
+
+    Deletes the specified configuration archive from the system.
+
+   download_file ( $FILE )
+            # Print the bigip.conf file to the terminal
+            print $ic->download_file('/config/bigip.conf');
+
+    This method provides direct access to files on the target system. The
+    method returns a scalar containing the contents of the file.
+
+    This method may be useful for downloading configuration files for
+    versioning or backups.
+
+   delete_volume ()
+    Deletes a volume from the system, or from all blades on a chassis.
+
+   get_all_software_status ()
+    A structure that contains information on software status. This includes
+    items like product, version, build, and (live install) completion
+    status.
+
+            Member                  Type            Description
+            ----------              ----------      ----------
+            installation_id         InstallationID  The location for the status.
+            product                 String          The product you are installing (ex: BIGIP) (or, product which is installed).
+            version                 String          The version of product (ex: 9.6.0).
+            build                   String          The build number you are installing.
+            base_build              String          The base build (used for hotfixes).
+            active                  boolean         Whether the boot location is active.
+            edition                 String          Gives the edition, e.g."Hotfix HF4" (used for hotfixes).
+            status                  String          A string indicating the status of the live install process. The status strings are "none", "audited", "retry", "upgrade needed", "waiting for image", "installing nn.mmm pct", "complete", "cancelling", "cancelled", and "failed". The "failed" string may have text giving a reason after it. The "waiting for image" string may have further text after it describing the image being awaited. A client should ignore any strings returned other than these. You can use the status field to monitor the completion status of a live install operation in process. When checking status, you should ensure that the product, version, and build reflect the software whose status you are interested in (because there are a few scenarios where the product, version, and build for a volume may not be updated as quickly as you might expect).
+
+   get_boot_location ()
+    Gets the configured default boot location, which will be the location
+    that boots after the system reboots.
+
+   get_hotfix_information ()
+    Gets information on any hotfixes applied to the system. There may not be
+    any hotfix installed, in which case the returned sequence is empty.
+
+   install_software_image_v2 ()
+    Initiates an install of a software image on all blades installed on one
+    chassis.
+
+   get_interface_list ()
+            my @interfaces = $ic->get_interface_list();
+
+    Retuns an ordered list of all interfaces on the target device.
+
+   get_interface_enabled_state ($interface)
+    Returns the enabled state of the specific interface.
+
+   get_interface_media_status ($interface)
+    Returns the media status of the specific interface.
+
+   get_interface_media_speed ($interface)
+    Returns the media speed of the specific interface in Mbps.
+
+   get_interface_statistics ($interface)
+    Returns all statistics for the specified interface as a
+    InterfaceStatistics object. Unless you specifically require access to
+    the raw object, consider using get_interface_statistics_stringified for
+    a pre-parsed hash in an easy-to-digest format.
+
+   get_interface_statistics_stringified ($interface)
+            my $inet        = ($ic->get_interface_list())[0];
+            my %stats       = $ic->get_interface_statistics_stringified($inet);
+
+            print "Interface: $inet - Bytes in: $stats{stats}{STATISTIC_BYTES_IN} - Bytes out: STATISTIC_BYTES_OUT";
+
+    Returns all statistics for the specified interface as a hash having the
+    following structure;
+
+            {
+            timestamp       => 'YYYY-MM-DD-hh-mm-ss',
+            stats           =>      {
+                                    statistic_1     => value
+                                    ...
+                                    statistic_n     => value
+                                    }
+            }
+
+    Where the keys of the stats hash are the names of the statistic types
+    defined in a InterfaceStatistics object. Refer to the official API
+    documentation for the exact structure of the InterfaceStatistics object.
+
+   get_trunk_list ()
+            my @trunks = $ic->get_trunk_list();
+
+    Returns an array of the configured trunks present on the device.
+
+   get_active_trunk_members ()
+            print "Trunk $t has " . $ic->get_active_trunk_members() . " active members.\n";
+
+    Returns the number of the active members for the specified trunk.
+
+   get_configured_trunk_members ()
+            print "Trunk $t has " . $ic->get_configured_trunk_members() . " configured members.\n";
+
+    Returns the number of configured members for the specified trunk.
+
+   get_trunk_interfaces ()
+            my @t_inets = $ic->get_trunk_interfaces();
+
+    Returns an array containing the interfaces of the members of the
+    specified trunk.
+
+   get_trunk_media_speed ()
+            print "Trunk $t operating at " . $ic->get_trunk_media_speed($t) . "Mbps\n";
+
+    Returns the current operational media speed (in Mbps) of the specified
+    trunk.
+
+   get_trunk_media_status ()
+            print "Trunk $t media status is " . $ic->get_trunk_media_status($t) . "\n";
+
+    Returns the current operational media status of the specified trunk.
+
+   get_trunk_lacp_enabled_state ()
+    Returns the enabled state of LACP for the specified trunk.
+
+   get_trunk_lacp_active_state ()
+    Returns the active state of LACP for the specified trunk.
+
+   get_trunk_statistics ()
+    Returns the traffic statistics for the specified trunk. The statistics
+    are returned as a TrunkStatistics object hence this method is useful
+    where access to raw statistical data is required.
+
+    For parsed statistic data, see get_trunk_statistics_stringified.
+
+    For specific information regarding data and units of measurement for
+    statistics methods, please see the Notes section.
+
+   get_trunk_statistics_stringified ()
+    Returns all statistics for the specified trunk as a hash of hases with
+    the following structure:
+
+            {       
+                    timestamp       => 'yyyy-mm-dd-hh-mm-ss',
+                    stats           => {
+                                            stats_1 => value,
+                                            stats_3 => value,
+                                            ...
+                                            stats_n => value
+                                    }
+            }
+
+    This function accepts a single parameter; the trunk for which the
+    statistics are to be returned.
+
+    For specific information regarding data and units of measurement for
+    statistics methods, please see the Notes section.
+
+   get_self_ip_list
+    Returns a list of all self IP addresses on the target device.
+
+   get_self_ip_vlan ( $SELF_IP )
+    Returns the VLAN associated with the specified self IP address on the
+    target device.
+
+   get_vs_list ()
+            my @virtuals    = $ic->get_vs_list();
+
+    Please note: this method has been deprecated in future releases. Please
+    use get_ltm_vs_list instead.
+
+    Returns an array of all defined LTM virtual servers.
+
+   get_ltm_vs_list ()
+            my @ltm_virtuals = $ic->get_ltm_vs_list();
+
+    Returns an array of all defined LTM virtual servers.
+
+   get_gtm_vs_list ()
+            my @gtm_virtuals = $ic->get_gtm_vs_list();
+
+    Returns an array of the names of all defined GTM virtual servers.
+
+   get_vs_destination ($virtual_server)
+            my $destination = $ic->get_vs_destination($vs);
+
+    Returns the destination of the specified virtual server in the form
+    ipv4_address%route_domain:port.
+
+   get_vs_enabled_state ($virtual_server)
+            print "LTM Virtual server $vs is in state ",$ic->get_vs_enabled_state($vs),"\n";
+
+    Please note: this method has been deprecated in future releases. Please
+    use the get_ltm_vs_enabled_state() instead.
+
+    Return the enabled state of the specified LTM virtual server.
+
+   get_ltm_vs_enabled_state ($virtual_server)
+            print "LTM Virtual server $vs is in state ",$ic->get_ltm_vs_enabled_state($vs),"\n";
+
+    Return the enabled state of the specified LTM virtual server.
+
+   get_gtm_vs_enabled_state ($virtual_server)
+            print "GTM Virtual server $vs is in state ",$ic->get_gtm_vs_enabled_state($vs),"\n";
+
+    Return the enabled state of the specified GTM virtual server. The GTM
+    server should be provided as a name only such as that returned from the
+    get_gtm_vs_list method.
+
+   get_vs_all_statistics ()
+    Please Note: This method has been deprecated in future releases. Please
+    use get_ltm_vs_all_statistics.
+
+    Returns the traffic statistics for all configured LTM virtual servers.
+    The statistics are returned as VirtualServerStatistics struct hence this
+    method is useful where access to raw statistical data is required.
+
+    For parsed statistic data, see get_ltm_vs_statistics_stringified.
+
+    For specific information regarding data and units of measurement for
+    statistics methods, please see the Notes section.
+
+   get_ltm_vs_all_statistics ()
+    Returns the traffic statistics for all configured LTM virtual servers.
+    The statistics are returned as VirtualServerStatistics struct hence this
+    method is useful where access to raw statistical data is required.
+
+    For parsed statistic data, see get_ltm_vs_statistics_stringified.
+
+    For specific information regarding data and units of measurement for
+    statistics methods, please see the Notes section.
+
+   get_vs_statistics ($virtual_server)
+            my $statistics = $ic->get_vs_statistics($vs);
+
+    Returns all statistics for the specified virtual server as a
+    VirtualServerStatistics object. Consider using
+    get_vs_statistics_stringified for accessing virtual server statistics in
+    a pre-parsed hash structure.
+
+    For specific information regarding data and units of measurement for
+    statistics methods, please see the Notes section.
+
+   get_vs_statistics_stringified ($virtual_server)
+            my $statistics = $ic->get_vs_statistics_stringified($vs);
+
+            foreach (sort keys %{$stats{stats}}) {
+                    print "$_: $stats{stats}{$_}\n";
+            }
+
+    Returns all statistics for the specified virtual server as a
+    multidimensional hash (hash of hashes). The hash has the following
+    structure:
+
+            {
+                    timestamp       => 'yyyy-mm-dd-hh-mm-ss',
+                    stats           => {
+                                            statistic_1     => value,
+                                            statistic_2     => value,
+                                            ...
+                                            statistic_n     => value
+                                    }
+            }
+
+    This function accepts a single parameter; the virtual server for which
+    the statistics are to be returned.
+
+    For specific information regarding data and units of measurement for
+    statistics methods, please see the Notes section.
+
+   get_ltm_vs_rules ($virtual_server)
+   get_ltm_snat_pool ($virtual_server)
+   get_ltm_snat_type ($virtual_server)
+   get_default_pool_name ($virtual_server)
+            print "Virtual Server: $virtual_server\nDefault Pool: ", 
+                    $ic->get_default_pool_name($virtual_server), "\n";
+
+    Returns the default pool names for the specified virtual server.
+
+   get_pool_list ()
+            print join " ", ($ic->get_pool_list());
+
+    Returns a list of all LTM pools in the target system.
+
+    Note that this method has been deprecated in future releases - please
+    use get_ltm_vs_list instead.
+
+   get_ltm_pool_list ()
+            print join " ", ($ic->get_ltm_pool_list());
+
+    Returns a list of all LTM pools in the target system.
+
+   get_pool_members ($pool)
+            foreach my $pool ($ic->get_pool_list()) {
+                    print "\n\n$pool:\n";
+
+                    foreach my $member ($ic->get_pool_members($pool)) {
+                            print "\t$member\n";
+                    }
+            }
+
+    Please note: this method has been deprecated in future releases. Please
+    use the get_ltm_pool_members method instead.
+
+    Returns a list of the pool members for the specified LTM pool. This
+    method takes one mandatory parameter; the name of the pool.
+
+    Pool member are returned in the format IP_address:service_port.
+
+   get_ltm_pool_members ($pool)
+            foreach my $pool ($ic->get_ltm_pool_list()) {
+                    print "\n\n$pool:\n";
+
+                    foreach my $member ($ic->get_ltm_pool_members($pool)) {
+                            print "\t$member\n";
+                    }
+            }
+
+    Returns a list of the pool members for the specified LTM pool. This
+    method takes one mandatory parameter; the name of the pool.
+
+    Pool member are returned in the format IP_address:service_port.
+
+   get_gtm_pool_members ($pool)
+    Returns a list of the pool members for the specified GTM pool. This
+    method takes one mandatory parameter; the name of the pool.
+
+    Pool member are returned in the format IP_address:service_port.
+
+   get_pool_statistics ($pool)
+            my %stats = $ic->get_pool_statistics($pool);
+
+    Returns the statistics for the specified pool as a PoolStatistics
+    object. For pre-parsed pool statistics consider using the
+    get_pool_statistics_stringified method.
+
+   get_pool_statistics_stringified ($pool)
+            my %stats = $ic->get_pool_statistics_stringified($pool);
+            print "Pool $pool bytes in: $stats{stat}{STATISTIC_SERVER_SIDE_BYTES_OUT}";
+
+    Returns a hash containing all pool statistics for the specified pool in
+    a delicious, easily digestable and improved formula.
+
+   get_pool_member_statistics ($pool)
+    Returns all pool member statistics for the specified pool as an array of
+    MemberStatistics objects. Unless you feel like playing with Data::Dumper
+    on a rainy Sunday afternoon, consider using
+    get_pool_member_statistics_stringified method.
+
+   get_pool_member_object_status ($pool)
+    Returns all pool member stati for the specified pool as an array of
+    MemberObjectStatus objects.
+
+   get_pool_member_statistics_stringified ($pool)
+            my %stats = $ic->get_pool_member_statistics_stringified($pool);
+
+            print "Member\t\t\t\tRequests\n",'-'x5,"\t\t\t\t",'-'x5,"\n";
+        
+            foreach my $member (sort keys %stats) {
+                    print "$member\t\t$stats{$member}{stats}{STATISTIC_TOTAL_REQUESTS}\n";
+            }
+
+            # Prints a list of requests per pool member
+
+    Returns a hash containing all pool member statistics for the specified
+    pool. The hash has the following structure;
+
+            member_1 =>     {
+                            timestamp       => 'YYYY-MM-DD-hh-mm-ss',
+                            stats           =>      {
+                                                    statistics_1    => value
+                                                    ...
+                                                    statistic_n     => value
+                                                    }
+                            }
+            member_2 =>     {
+                            ...
+                            }
+            member_n =>     {
+                            ...
+                            }
+
+    Each pool member is specified in the form
+    ipv4_address%route_domain:port.
+
+   get_all_pool_member_statistics ($pool)
+    Returns all pool member statistics for the specified pool. This method
+    is analogous to the get_pool_member_statistics() method and the two will
+    likely be merged in a future release.
+
+   get_ltm_pool_status ($pool)
+    Returns the status of the specified pool as a ObjectStatus object.
+
+    For formatted pool status information, see the
+    get_ltm_pool_status_as_string() method.
+
+   get_ltm_pool_member_status ($pool, $member)
+    Returns the status of the specified member in the specified pool as a
+    ObjectStatus object.
+
+   get_ltm_pool_availability_status ($pool)
+    Retuns the availability status of the specified pool.
+
+   get_ltm_pool_enabled_status ($pool)
+    Retuns the enabled status of the specified pool.
+
+   get_ltm_pool_status_description ($pool)
+    Returns a descriptive status of the specified pool.
+
+   get_ltm_pool_status_as_string ($pool)
+    Returns the pool status as a descriptive string.
+
+   get_connection_list ()
+    Returns a list of active connections as a list of ConnectionID objects.
+
+   get_all_active_connections ()
+    Gets all active connections in details on the device.
+
+   get_active_connections_count()
+    Returns the number of all active connections on the device.
+
+   get_node_list ()
+            print join "\n", ($ic->get_node_list());
+
+    Returns a list of all configured nodes in the target system.
+
+    Nodes are returned as ipv4 addresses.
+
+   get_screen_name ($node)
+            foreach ($ic->get_node_list()) {
+                    print "Node: $_ (" . $ic->get_screen_name($_) . ")\n";
+            }
+
+    Retuns the screen name of the specified node.
+
+   get_node_status ($node)
+            $ic->get_node_status(
+
+    Returns the status of the specified node as a ObjectStatus object.
+
+    For formatted node status information, see the
+    get_node_status_as_string() method.
+
+   get_node_availability_status ($node)
+    Retuns the availability status of the node.
+
+   get_node_enabled_status ($node)
+    Retuns the enabled status of the node.
+
+   get_node_status_description ($node)
+    Returns a descriptive status of the specified node.
+
+   get_node_status_as_string ($node)
+    Returns the node status as a descriptive string.
+
+   get_node_monitor_status ($node)
+    Gets the current availability status of the specified node addresses.
+
+   get_node_statistics ($node)
+    Returns all statistics for the specified node.
+
+   get_node_statistics_stringified
+            my %stats = $ltm->get_node_statistics_stringified($node);
+
+            foreach (sort keys %{stats{stats}}) {
+                    print "$_:\t$stats{stats}{$_}{high}\t$stats{stats}{$_}{low}\n";
+            }
+
+    Returns a multidimensional hash containing all current statistics for
+    the specified node. The hash has the following structure:
+
+            {
+                    timestamp       => 'yyyy-mm-dd-hh-mm-ss',
+                    stats           => {
+                                            statistic_1     => value,
+                                            statistic_2     => value,
+                                            ...
+                                            statistic_n     => value
+                                    }
+            }
+
+    This function accepts a single parameter; the node for which the
+    statistics are to be returned.
+
+    For specific information regarding data and units of measurement for
+    statistics methods, please see the Notes section.
+
+   get_gtm_pool_list ()
+    Returns a list of GTM pools.
+
+   get_gtm_pool_description ()
+    Returns a description of the specified GTM pool.
+
+   get_gtm_vs_all_statistics ()
+    Returns the traffic statistics for all configured GTM virtual servers.
+    The statistics are returned as VirtualServerStatistics struct hence this
+    method is useful where access to raw statistical data is required.
+
+    For parsed statistic data, see get_gtm_vs_statistics_stringified.
+
+    For specific information regarding data and units of measurement for
+    statistics methods, please see the Notes section.
+
+   get_ltm_address_class_list ()
+    Returns a list of all existing address classes.
+
+   get_ltm_string_class_list ()
+    Returns a list of all existing string classes.
+
+   get_ltm_string_class ( $class_name )
+    Return the specified LTM string class.
+
+   get_ltm_string_class_members ( $class )
+    Returns the specified LTM string class members.
+
+   add_ltm_string_class_member ( $class, $member )
+    Add the provided member to the specified class.
+
+   delete_ltm_string_class_member ( $class, $member )
+    Deletes the provided member from the specified class.
+
+   set_ltm_string_class_member ( $class, $member, value )
+    Sets the value of the member to the provided value in the specified
+    class.
+
+   get_db_variable ( $VARIABLE )
+            # Prints the value of the configsync.state database variable.
+            print "Config state is " . $ic->get_db_variable('configsync.state') . "\n";
+
+    Returns the value of the specified db variable.
+
+   get_sync_status ( $DEVICE_GROUP )
+    Accepts one mandatory parameter; the device group name for which to
+    return the sync status, and returns a SyncStatus struct containing
+    information on the ConfigSync status of the specified device group.
+
+   get_sync_status_overview
+    Gets the sync status of the system containing information on the sync
+    status of the current device's presence in all device groups in which it
+    is a member and returns a SyncStatus struct.
+
+   get_sync_time_diff ( $DEVICE_GROUP )
+    Accepts one mandatory parameter; the device group name for which to
+    return the sync status and returns the number of seconds between the
+    oldest successful ConfigSync and the current time for all devices in the
+    device group.
+
+    That is; if there are unsynchronised changes in the device group, then
+    the value returned will be the delta in seconds between the oldest
+    successful synchronisation in the device group and the current time.
+
+   get_device_group_list ( $DEVICE_GROUP )
+    Accepts one mandatory parameter; the device group name for which to
+    return the device group list.
+
+   get_device_group_type ( $DEVICE_GROUP )
+    Accepts one mandatory parameter; the device group name for which to
+    return the device group type.
+
+   get_event_subscription_list
+    Returns an array of event subscription IDs for all registered event
+    subscriptions.
+
+   get_event_subscription
+   remove_event_subscription
+   get_event_subscription_state
+   get_event_subscription_url
+   get_subscription_list
+    This method is an analog of get_event_subscription
+
+   create_subscription_list (%args)
+            my $subscription = $ic->create_subscription_list (
+                                                    name                            => 'my_subscription_name',
+                                                    url                             => 'http://company.com/my/eventnotification/endpoint,
+                                                    username                        => 'username',
+                                                    password                        => 'password',
+                                                    ttl                             => -1,
+                                                    min_events_per_timeslice        => 10,
+                                                    max_timeslice                   => 10
+                                            );
+
+    Creates an event subscription with the target system. This method
+    requires the following parameters:
+
+    name
+       A user-friendly name for the subscription.
+
+    url
+       The target URL endpoint for the event notification interface to send
+       event notifications.
+
+    username
+       The basic authentication username required to access the URL
+       endpoint.
+
+    password
+       The basic authentication password required to access the URL
+       endpoint.
+
+    ttl
+       The time to live (in seconds) for this subscription. After the ttl is
+       reached, the subscription will be removed from the system. A value of
+       -1 indicates an infinite life time.
+
+    min_events_per_timeslice
+       The minimum number of events needed to trigger a notification. If
+       this value is 50, then this means that when 50 events are queued up
+       they will be sent to the notification endpoint no matter what the
+       max_timeslice is set to.
+
+    max_timeslice
+       This maximum time to wait (in seconds) before event notifications are
+       sent to the notification endpoint. If this value is 30, then after 30
+       seconds a notification will be sent with the events in the
+       subscription queue.
+
+   certificate_add_pem_to_bundle (mode, cert_ids, pem_data)
+    Adds certificates identified by "pem_data" to the certificate bundles,
+    which are presumed to exist already.
+
+   certificate_bind (mode, cert_ids, key_ids)
+    Binds/associates the specified keys and certificates.
+
+   certificate_delete (mode, cert_ids)
+    Deletes/uninstalls the specified certificates.
+
+   certificate_delete_from_bundle (mode, cert_ids, x509_data)
+    Deletes certificates, identified by their subject's X509 data, from the
+    certificate bundles.
+
+   certificate_export_to_pem (mode, cert_ids)
+    Get the specified certificates as PEM strings.
+
+   certificate_import_from_pem (mode, cert_ids, pem_data, overwrite)
+    Imports/installs the specified certificates from the given PEM-formatted
+    data.
+
+   get_key_list (mode)
+    Get the list of keys in the system.
+
+   get_certificate_bundle (mode, file_names)
+    Gets the list of all certificates bundled in the certificate files as
+    specified by the file_names.
+
+   get_certificate_list (mode)
+    Get the list of certificates in the system.
+
+   key_delete (mode, key_ids)
+    Deletes/uninstalls the specified keys.
+
+   key_export_to_pem (mode, key_ids)
+    Get the specified certificates as PEM strings.
+
+   key_import_from_pem (mode, key_ids, pem_data, overwrite)
+    Imports/installs the specified keys from the given PEM-formatted data.
+
+   create_user_3 ()
+    Create the specified new users.
+
+   change_password_2 ()
+    Change the user's password.
+
+   delete_user ()
+    Delete the specified users.
+
+   get_user_list ()
+    List all users.
+
+   get_encrypted_password (user_names)
+    Gets the encrypted passwords of the specified users.
+
+   get_user_id (user_names)
+    Get the User IDs for the given usernames.
+
+   get_login_shell (user_names)
+    Get the login shells for the given usernames.
+
+   set_login_shell (user_names, shells)
+    Sets the login shells for the specified users.
+
+   get_user_permission (user_names)
+    Gets the permissions of the specified users.
+
+   set_user_permission (user_names, permissions)
+    Sets the permissions of the specified users.
+
+NOTES
+   Statistic Methods
+    Within iControl, statistical values are a 64-bit unsigned integer
+    represented as a Common::ULong64 object. The ULong64 object is a stuct
+    of two 32-bit values. This representation is used as there is no native
+    support for the encoding of 64-bit numbers in SOAP.
+
+    The ULong object has the following structure;
+
+            ({
+                    STATISTIC_NAME  => {
+                                    high    => long
+                                    low     => long
+                            }
+            }, bless Common::ULong64)
+
+    Where high is the unsigned 32-bit integer value of the high-order
+    portion of the measured value and low is the unsigned 32-bit integer
+    value of the low-order portion of the measured value.
+
+    In non-stringified statistic methods, these return values are ULong64
+    objects as returned by the iControl API. In stringified statistic method
+    calls, the values are processed on the client side into a local 64-bit
+    representation of the value using the following form.
+
+            $value = ($high<<32)|$low;
+
+    Stringified method calls are guaranteed to return a correct localised
+    64-bit representation of the value.
+
+    It is the callers responsibility to convert the ULong struct for all
+    other non-stringified statistic method calls.
+
+AUTHOR
+    Luke Poskitt, <ltp@cpan.org>
+
+    Thanks to Eric Welch, <erik.welch@gmail.com>, for input and feedback.
 
 LICENSE AND COPYRIGHT
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of either: the GNU General Public License as published
+    by the Free Software Foundation; or the Artistic License.
 
-Copyright (C) 2012 Luke Poskitt
-
-This program is free software; you can redistribute it and/or modify it
-under the terms of either: the GNU General Public License as published
-by the Free Software Foundation; or the Artistic License.
-
-See http://dev.perl.org/licenses/ for more information.
+    See http://dev.perl.org/licenses/ for more information.
 
