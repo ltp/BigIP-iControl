@@ -8,8 +8,9 @@ use Exporter;
 use SOAP::Lite;
 use MIME::Base64;
 use Math::BigInt;
+use Date::Calc qw(Gmtime Mktime);
 
-our $VERSION    = '0.097';
+our $VERSION    = '0.099';
 
 =head1 NAME
 
@@ -73,13 +74,28 @@ our $modules    = {
 	GlobalLB	=>	{
 				Pool		=>	{
 							get_description		=> 'pool_names',
+							get_enabled_state	=> 'pool_names',
 							get_list		=> 0,
-							get_member		=> 'pool_names'
+							get_member		=> 'pool_names',
+							get_member_v2		=> 'pool_names',
+							get_member_enabled_state=> {pool_names => 1, members => 1},
+							get_member_object_status=> {pool_names => 1, members => 1},
+                                                        get_object_status       => 'pool_names'
 							},
 				VirtualServer	=>	{
 							get_all_statistics	=> 0,
 							get_enabled_state	=> 'virtual_servers',
-							get_list		=> 0
+							get_list		=> 0,
+							get_monitor_association	=> 'virtual_servers',
+							get_object_status	=> 'virtual_servers',
+							get_server		=> 'virtual_servers',
+							},
+				WideIP		=>	{
+							get_alias		=> 'wide_ips',
+							get_list		=> 0,
+							get_enabled_state	=> 'wide_ips',
+							get_object_status	=> 'wide_ips',
+							get_wideip_pool		=> 'wide_ips',
 							}
 				},
 	LTConfig	=>	{},
@@ -89,6 +105,7 @@ our $modules    = {
 							get_default_pool_name	=> 'virtual_servers',
 							get_destination		=> 'virtual_servers',
 							get_enabled_state	=> 'virtual_servers',
+							get_object_status	=> 'virtual_servers',
 							get_protocol		=> 'virtual_servers',
 							get_statistics		=> 'virtual_servers',
 							get_all_statistics	=> 0,
@@ -99,12 +116,16 @@ our $modules    = {
 				Pool		=>	{
 							get_list		=> 0,
 							get_member		=> 'pool_names',
+							get_member_monitor_status       => {pool_names => 1, members => 1},
+							get_monitor_association => 'pool_names',
+							get_monitor_instance    => 'pool_names',
 							get_object_status	=> 'pool_names',
 							get_statistics		=> 'pool_names',
 							get_all_statistics	=> 'pool_names',
 							get_member_object_status=> {pool_names => 1, members => 1}
 							},
 				PoolMember	=>	{
+							get_object_status	=> 'pool_names',
 							get_statistics		=> {pool_names => 1, members => 1},
 							get_all_statistics	=> 'pool_names',
 							},
@@ -129,6 +150,15 @@ our $modules    = {
 				DBVariable	=>	{
 							query			=> 'variables'
 							},
+                                DeviceGroup     =>      {
+                                                        get_device_sync_status  => { device_groups => 1, devices => 1 },
+                                                        get_sync_status         => 'device_groups',
+                                                        get_sync_status_overview=> 0,
+                                                        get_version             => 0,
+                                                        get_list                => 0,
+                                                        get_device              => 'device_groups',
+                                                        get_type		=> 'device_groups',
+                                                        },
 				EventSubscription=>	{
 							create			=> 'sub_detail_list',
 							get_list		=> 0,
@@ -383,6 +413,10 @@ sub BEGIN {
                 '{urn:iControl}LocalLB.VirtualServer.VirtualServerCMPEnableMode'	=> 1,
                 '{urn:iControl}LocalLB.VirtualServer.VirtualServerType'			=> 1,
                 '{urn:iControl}Management.DebugLevel'					=> 1,
+                '{urn:iControl}Management.DeviceGroup.DeviceSyncType'			=> 1,
+                '{urn:iControl}Management.DeviceGroup.MemberState'			=> 1,
+                '{urn:iControl}Management.DeviceGroup.StatusColor'			=> 1,
+                '{urn:iControl}Management.DeviceGroup.Type'				=> 1,
                 '{urn:iControl}Management.LDAPPasswordEncodingOption'			=> 1,
                 '{urn:iControl}Management.LDAPSSLOption'				=> 1,
                 '{urn:iControl}Management.LDAPSearchMethod'				=> 1,
@@ -516,6 +550,8 @@ this value will default to https.
 If TRUE when used with a secure connection then the client will ensure that the target server has a valid certificate 
 matching the expected hostname.
 
+Defaults to false - that is; no certificate validation is performed.
+
 =back
 
 =cut
@@ -526,12 +562,19 @@ sub new {
         defined $args{server}	? $self->{server}	= $args{server}		: croak 'Constructor failed: server not defined';
 	defined $args{username}	? $self->{username}	= $args{username}	: croak 'Constructor failed: username not defined';
 	defined $args{password}	? $self->{password}	= $args{password}	: croak 'Constructor failed: password not defined';
+
 	$self->{proto}		= ($args{proto} or 'https');
 	$self->{port}		= ($args{port} or '443');
-	$self->{_client}	= SOAP::Lite	->proxy($self->{proto}.'://'.$self->{server}.':'.$self->{port}.'/iControl/iControlPortal.cgi')
+	my $ssl_opts		= [];
+
+	if ( ! $args{ verify_hostname } ) {
+		$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
+		$ssl_opts = [SSL_verifycn_scheme => 'www', SSL_verify_mode => 0]
+	}
+		
+	$self->{_client}	= SOAP::Lite	->proxy($self->{proto}.'://'.$self->{server}.':'.$self->{port}.'/iControl/iControlPortal.cgi', ssl_opts => $ssl_opts )
 						->deserializer(BigIP::iControlDeserializer->new());
 	$self->{_client}->transport->http_request->header('Authorization' => 'Basic ' . MIME::Base64::encode("$self->{username}:$self->{password}") );
-	eval { $self->{_client}->transport->ssl_opts( verify_hostname => $args{verify_hostname} ) };
 	return $self;
 }
 
@@ -659,6 +702,25 @@ sub __process_timestamp {
 		__zero_fill($time_stamp->{hour})	. '-' .
 		__zero_fill($time_stamp->{minute})	. '-' .
 		__zero_fill($time_stamp->{second}))
+}
+
+# Take two Common::TimeStamp structs and calculate the delta.
+
+sub __calc_timestamp_delta {
+	my ($t1, $t2) = @_;
+
+	return abs ( Mktime ( $t1->{year}, $t1->{month}, $t1->{day}, $t1->{hour}, $t1->{minute}, $t1->{second} )
+			- Mktime ( $t2->{year}, $t2->{month}, $t2->{day}, $t2->{hour}, $t2->{minute}, $t2->{second} ) )
+}
+
+# Calculate the delta in seconds between a Common::TimeStamp struct and gmtime()
+
+sub __calc_gmtime_delta {
+	my $t1 = shift;
+
+	return abs( ( Mktime( ( Gmtime )[0..5] ) ) 
+			- Mktime( $t1->{year}, $t1->{month}, $t1->{day}, $t1->{hour}, $t1->{minute}, $t1->{second} ) 
+		) 
 }
 
 sub __process_statistics {
@@ -1468,11 +1530,11 @@ Returns an array of the names of all defined GTM virtual servers.
 =cut
 
 sub get_gtm_vs_list {
-	my @members;
-	foreach (@{$_[0]->_request(module => 'GlobalLB', interface => 'VirtualServer', method => 'get_list')}) {
-		push @members, $_->{name}
-	}
-	return @members
+	my @vs;
+	@vs = map {
+		$_->{name}
+	} @{$_[0]->_request(module => 'GlobalLB', interface => 'VirtualServer', method => 'get_list')};
+	return @vs;
 }
 
 
@@ -1516,6 +1578,11 @@ Return the enabled state of the specified LTM virtual server.
 sub get_ltm_vs_enabled_state {
 	my ($self, $vs)	= @_;
 	return @{$self->_request(module => 'LocalLB', interface => 'VirtualServer', method => 'get_enabled_state', data => {virtual_servers => [$vs]})}[0];
+}
+
+sub get_ltm_vs_object_status {
+	my ($self, $vs)	= @_;
+	return @{$self->_request(module => 'LocalLB', interface => 'VirtualServer', method => 'get_object_status', data => {virtual_servers => [$vs]})}[0];
 }
 
 =head3 get_gtm_vs_enabled_state ($virtual_server)
@@ -1735,6 +1802,24 @@ sub get_ltm_pool_members {
 	return @members;
 }
 
+sub get_ltm_pool_member_monitor_status {
+	my ($self, $pool)= @_;
+	my @members;
+	foreach (@{@{$self->__get_pool_members($pool,'LocalLB')}[0]}) {push @members, ($_->{address}.':'.$_->{port})}
+	return @members;
+}
+
+sub get_ltm_pool_monitor_association {
+	my ($self, $pool)= @_;
+	return $self->_request(module => 'LocalLB', interface => 'Pool', method => 'get_monitor_association', data => {pool_names => [$pool]})
+}
+
+sub get_ltm_pool_monitor_instance {
+	my ($self, $pool)= @_;
+	return @{@{ $self->_request(module => 'LocalLB', interface => 'Pool', method => 'get_monitor_instance', data => {pool_names => [$pool]})}[0]}
+}
+
+
 =head3 get_gtm_pool_members ($pool)
 
 Returns a list of the pool members for the specified GTM pool.  This method takes one mandatory parameter; the name of the pool.
@@ -1743,7 +1828,129 @@ Pool member are returned in the format B<IP_address:service_port>.
 
 =cut 
 
+sub _get_gtm_vs_enabled_state {
+        my ( $self, $virtual_servers ) = @_;
+
+        return $self->_request( module		=> 'GlobalLB',
+                                interface       => 'VirtualServer',
+                                method          => 'get_enabled_state',
+                                data            => { virtual_servers => [ $virtual_servers ] } )
+}
+
+sub get_gtm_vs_monitor_association {
+        my ( $self, $virtual_servers ) = @_;
+
+	my %def	= $self->__get_gtm_vs_definition( $virtual_servers );
+
+        return @{ $self->_request( module	=> 'GlobalLB',
+                                interface       => 'VirtualServer',
+                                method          => 'get_monitor_association',
+                                data            => { virtual_servers => [ { %def } ] } ) }[0];
+
+        return $self->_request( module		=> 'GlobalLB',
+                                interface       => 'VirtualServer',
+                                method          => 'get_monitor_association',
+                                data            => { virtual_servers => [ $virtual_servers ] } )
+}
+
+sub get_gtm_vs_object_status {
+        my ( $self, $virtual_servers ) = @_;
+
+	my %def	= $self->__get_gtm_vs_definition( $virtual_servers );
+
+	return @{ $self->_request(module	=> 'GlobalLB',
+				interface	=> 'VirtualServer',
+				method		=> 'get_object_status', 
+				data		=> { virtual_servers => [ { %def } ] }
+		) }[0];
+
+        return $self->_request( module		=> 'GlobalLB',
+                                interface       => 'VirtualServer',
+                                method          => 'get_object_status',
+                                data            => { virtual_servers => [ $virtual_servers ] } )
+}
+
+sub get_gtm_vs_server {
+        my ( $self, $virtual_servers ) = @_;
+
+        return $self->_request( module		=> 'GlobalLB',
+                                interface       => 'VirtualServer',
+                                method          => 'get_server',
+                                data            => { virtual_servers => [ $virtual_servers ] } )
+}
+
+sub get_wideip_list {
+        my $self = shift;
+
+        return @{ $self->_request( module	=> 'GlobalLB',
+                                interface       => 'WideIP',
+                                method          => 'get_list' ) }
+}
+
+sub get_wideip_alias {
+        my ( $self, $wide_ip ) = @_;
+
+        return @{ @{ $self->_request( module	=> 'GlobalLB',
+                                interface       => 'WideIP',
+                                method          => 'get_alias',
+                                data            => { wide_ips => [ $wide_ip ] } ) }[0] }
+}
+
+sub get_wideip_enabled_state {
+        my ( $self, $wide_ip ) = @_;
+
+        return @{ $self->_request( module	=> 'GlobalLB',
+                                interface       => 'WideIP',
+                                method          => 'get_enabled_state',
+                                data            => { wide_ips => [ $wide_ip ] } ) }[0]
+}
+
+sub get_wideip_object_status {
+        my ( $self, $wide_ip ) = @_;
+
+        return @{ $self->_request( module	=> 'GlobalLB',
+                                interface       => 'WideIP',
+                                method          => 'get_object_status',
+                                data            => { wide_ips => [ $wide_ip ] } ) }[0]
+}
+
+sub get_wideip_pool {
+        my ( $self, $wide_ip ) = @_;
+
+        return @{ @{ $self->_request( module	=> 'GlobalLB',
+                                interface       => 'WideIP',
+                                method          => 'get_wideip_pool',
+                                data            => { wide_ips => [ $wide_ip ] } ) }[0] }
+}
+
 sub get_gtm_pool_members {
+        my ( $self, $pool ) = @_;
+
+        return @{ $self->_request( module	=> 'GlobalLB',
+                                interface       => 'Pool',
+                                method          => 'get_member_v2',
+                                data            => { pool_names => [ $pool ] } ) }[0]
+}
+
+sub get_gtm_pool_member_enabled_state {
+        my ( $self, $pool, @members ) = @_;
+
+        return @{ $self->_request( module	=> 'GlobalLB',
+                                interface       => 'Pool',
+                                method          => 'get_member_enabled_state',
+                                data            => { pool_names => [ $pool ], members => [ @members ] } ) }[0]
+}
+
+sub get_gtm_pool_member_object_status {
+        my ( $self, $pool, @members ) = @_;
+
+        return @{ $self->_request( module	=> 'GlobalLB',
+                                interface       => 'Pool',
+                                method          => 'get_member_object_status',
+                                data            => { pool_names => [ $pool ], members => [ @members ] } ) }[0]
+}
+
+sub _get_gtm_pool_members {
 	my ($self,$pool)=@_;
 	my @members;
 	foreach (@{@{$self->__get_pool_members($pool,'GlobalLB')}[0]}) {push @members, $_->{member}->{address}.':'.$_->{member}->{port}}
@@ -1753,6 +1960,17 @@ sub get_gtm_pool_members {
 sub __get_pool_members {
 	my ($self, $pool, $module)= @_;
 	return $self->_request(module => $module, interface => 'Pool', method => 'get_member', data => {pool_names => [$pool]});
+}
+
+sub get_gtm_pool_enabled_state {
+	my ($self, $pool)= @_;
+	return @{ $self->_request(module => 'GlobalLB', interface => 'Pool', method => 'get_enabled_state', data => {pool_names => [$pool]})}[0];
+}
+
+
+sub get_gtm_pool_object_status {
+	my ($self, $pool)= @_;
+	return @{ $self->_request(module => 'GlobalLB', interface => 'Pool', method => 'get_object_status', data => {pool_names => [$pool]}) }[0];
 }
 
 =head3 get_pool_statistics ($pool)
@@ -1797,6 +2015,21 @@ sub get_pool_member_statistics {
 		pool_names	=> [$pool],
 		members		=> $self->__get_pool_members($pool,'LocalLB') });
 }
+
+=head3 get_pool_member_object_status ($pool)
+
+Returns all pool member stati for the specified pool as an array of MemberObjectStatus objects.
+
+=cut
+
+sub get_pool_member_object_status {
+    my ($self, $pool) = @_; 
+
+    return $self->_request(module => 'LocalLB', interface => 'PoolMember', method => 'get_object_status', data => {
+        pool_names  => [$pool],
+    }); 
+}
+
 
 =head3 get_pool_member_statistics_stringified ($pool)
 
@@ -1860,6 +2093,20 @@ For formatted pool status information, see the B<get_ltm_pool_status_as_string()
 sub get_ltm_pool_status {
 	my ($self, $pool)= @_;
 	return @{$self->_request(module => 'LocalLB', interface => 'Pool', method => 'get_object_status', data => {pool_names => [$pool]})}[0]
+}
+
+=head3 get_ltm_pool_member_status ($pool, $member)
+
+Returns the status of the specified member in the specified pool as a ObjectStatus object.
+
+=cut
+
+sub get_ltm_pool_member_status {
+    my ($self, $pool, $member) = @_; 
+    return @{$self->_request(module => 'LocalLB', interface => 'Pool', method => 'get_member_object_status', data => {
+        pool_names => [$pool],
+        members => [$member],
+    })}[0];
 }
 
 =head3 get_ltm_pool_availability_status ($pool)
@@ -2255,6 +2502,100 @@ sub get_db_variable {
 	my ($self,$var)	= @_;
 	return @{$self->_request(module => 'Management', interface => 'DBVariable', method => 'query', data => { variables => [$var] })}[0]->{value}
 }
+
+=head3 get_sync_status ( $DEVICE_GROUP )
+
+Accepts one mandatory parameter; the device group name for which to return the sync status, and returns a SyncStatus struct 
+containing information on the ConfigSync status of the specified device group.
+
+=cut
+
+sub get_sync_status {
+        my ( $self, $device_group ) = @_;
+        return @{ $self->_request( module => 'Management', interface => 'DeviceGroup', method => 'get_sync_status', data => {device_groups => [$device_group]} ) }[0];
+}
+
+=head3 get_sync_status_overview 
+
+Gets the sync status of the system containing information on the sync status of 
+the current device's presence in all device groups in which it is a member and 
+returns a SyncStatus struct.
+
+=cut
+
+sub get_sync_status_overview {
+        my $self = shift;
+        return $self->_request( module => 'Management', interface => 'DeviceGroup', method => 'get_sync_status_overview' );
+}
+
+=head3 get_sync_time_diff ( $DEVICE_GROUP )
+
+Accepts one mandatory parameter; the device group name for which to return the sync status and returns the number of seconds
+between the oldest successful ConfigSync and the current time for all devices in the device group.
+
+That is; if there are unsynchronised changes in the device group, then the value returned will be the delta in seconds
+between the oldest successful synchronisation in the device group and the current time.
+
+=cut
+
+sub get_sync_time_diff {
+        my ( $self, $device_group ) = @_;
+	my @diff;
+
+	my $devices = @{ $self->_get_device_sync_status( $device_group, [ $self->_get_device( $device_group ) ] ) }[0];
+
+	my $s = ( reverse sort 
+			map  { ( __calc_timestamp_delta( 
+				$_->{commit_id}->{sync_time},
+				$_->{last_successful_commit_id}->{sync_time} ) 
+					? __calc_gmtime_delta( $_->{commit_id}->{sync_time} )
+					: 0 )
+			} @{ $devices }
+		)[0]
+}
+
+# The private methods in the section below were implemented when determining the most preferable way in which to determine the ConfigSync state in v11.
+#
+# They remain as they may possibly be implemented or exposed in future version of this module.
+
+sub _get_device_sync_status {
+        my ( $self, $device_group, $devices ) = @_;
+        return $self->_request( module => 'Management', interface => 'DeviceGroup', method => 'get_device_sync_status', data => {device_groups => [$device_group], devices => [$devices]} );
+}
+
+sub _get_version {
+        my $self = shift;
+        return $self->_request( module => 'Management', interface => 'DeviceGroup', method => 'get_version' );
+}
+
+=head3 get_device_group_list ( $DEVICE_GROUP )
+
+Accepts one mandatory parameter; the device group name for which to return the device group list.
+
+=cut
+
+sub get_device_group_list {
+        my $self = shift;
+        return $self->_request( module => 'Management', interface => 'DeviceGroup', method => 'get_list' );
+}
+
+=head3 get_device_group_type ( $DEVICE_GROUP )
+
+Accepts one mandatory parameter; the device group name for which to return the device group type.
+
+=cut
+
+sub get_device_group_type {
+        my ( $self, $device_group ) = @_;
+        return @{ $self->_request( module => 'Management', interface => 'DeviceGroup', method => 'get_type', data => {device_groups => [$device_group]} ) }[0]
+}
+
+
+sub _get_device {
+        my ( $self, $device_group ) = @_;
+        return @{@{$self->_request( module => 'Management', interface => 'DeviceGroup', method => 'get_device', data => {device_groups => [$device_group]} )}[0]};
+}
+
 
 =head3 get_event_subscription_list
 
