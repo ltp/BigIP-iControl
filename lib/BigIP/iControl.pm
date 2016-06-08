@@ -126,6 +126,7 @@ our $modules    = {
 							delete_string_class_member=> 'class_members',
 							},
 				ProfileClientSSL =>	{
+							create_v2		=> {profile_names => 1, keys => 1, certs => 1},
 							delete_profile		=> {profile_names => 1},
 							get_cipher_list		=> {profile_names => 1},
 							get_default_profile	=> {profile_names => 1},
@@ -139,9 +140,11 @@ our $modules    = {
 							set_ca_file_v2		=> {profile_names => 1, cas => 1},
 							set_chain_file_v2	=> {profile_names => 1, chains => 1},
 							set_client_certificate_ca_file_v2 => {profile_names => 1, client_cert_cas => 1},
+							set_default_profile	=> {profile_names => 1, defaults => 1},
 							set_key_certificate_file => {profile_names => 1, keys => 1, certs => 1},
 							},
 				ProfileServerSSL =>	{
+							create  		=> {profile_names => 1},
 							delete_profile		=> {profile_names => 1},
 							get_cipher_list		=> {profile_names => 1},
 							get_default_profile	=> {profile_names => 1},
@@ -2391,6 +2394,16 @@ sub set_ltm_string_class_member {
 			)
 }
 
+=head3 create_clientssl_profile ()
+
+Creates the specified client SSL profiles, using key and certificate file object names. Certificate and key file objects are managed by the Management::KeyCertificate interface.
+
+=cut
+
+sub create_clientssl_profile {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'create_v2', data => {profile_names => $_[1], keys => $_[2], certs => $_[3]})
+}
+
 =head3 delete_clientssl_profile ()
 
 Deletes the specified client SSL profiles.
@@ -2521,6 +2534,16 @@ sub set_clientssl_client_ca {
         return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'set_client_certificate_ca_file_v2', data => {profile_names => $_[1], client_cert_cas => $_[2]})
 }
 
+=head3 set_clientssl_default_profile ()
+
+Sets the names of the default profiles from which the specified profiles will derive default values for its attributes.
+
+=cut
+
+sub set_clientssl_default_profile {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'set_default_profile', data => {profile_names => $_[1], defaults => $_[2]})
+}
+
 =head3 set_clientssl_key_cert ()
 
 Sets the key and certificate file object names to be used by BIG-IP acting as an SSL server for a set of client SSL profiles. Key and certificate file objects are managed by the Management::KeyCertificate interface. These values can be retrieved via the get_key_file_v2 and get_certificate_file_v2 methods.
@@ -2529,6 +2552,16 @@ Sets the key and certificate file object names to be used by BIG-IP acting as an
 
 sub set_clientssl_key_cert {
         return $_[0]->_request(module => 'LocalLB', interface => 'ProfileClientSSL', method => 'set_key_certificate_file', data => {profile_names => $_[1], keys => $_[2], certs => $_[3]})
+}
+
+=head3 create_serverssl_profile ()
+
+Creates the specified server SSL profiles.
+
+=cut
+
+sub create_server_profile {
+        return $_[0]->_request(module => 'LocalLB', interface => 'ProfileServerSSL', method => 'create', data => {profile_names => $_[1]})
 }
 
 =head3 delete_serverssl_profile ()
